@@ -1,0 +1,2433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syntactic Strength: Nattysplitter</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Phosphor Icons for social media/UI icons -->
+    <script src="https://unpkg.com/phosphor-icons"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <!-- Configure Tailwind and Inter font -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'dark-primary': '#111827',
+                        'dark-secondary': '#1F2937',
+                        'accent-red': '#DC2626',
+                        'accent-light': '#FCA5A5',
+                        'accent-green': '#10B981',
+                        'accent-blue': '#3B82F6',
+                        'accent-purple': '#8B5CF6',
+                        'danger': '#EF4444',
+                        'social-google': '#4285F4',
+                        'social-facebook': '#1877F2',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    keyframes: {
+                        pulseRed: {
+                            '0%, 100%': { 'text-shadow': '0 0 5px rgba(220, 38, 38, 0.5), 0 0 10px rgba(220, 38, 38, 0.2)' },
+                            '50%': { 'text-shadow': '0 0 10px rgba(220, 38, 38, 0.8), 0 0 20px rgba(220, 38, 38, 0.5)' },
+                        },
+                        pulseGreen: {
+                            '0%, 100%': { 'text-shadow': '0 0 5px rgba(16, 185, 129, 0.5), 0 0 10px rgba(16, 185, 129, 0.2)' },
+                            '50%': { 'text-shadow': '0 0 10px rgba(16, 185, 129, 0.8), 0 0 20px rgba(16, 185, 129, 0.5)' },
+                        },
+                        pulseBlue: {
+                            '0%, 100%': { 'text-shadow': '0 0 5px rgba(59, 130, 246, 0.5), 0 0 10px rgba(59, 130, 246, 0.2)' },
+                            '50%': { 'text-shadow': '0 0 10px rgba(59, 130, 246, 0.8), 0 0 20px rgba(59, 130, 246, 0.5)' },
+                        }
+                    },
+                    animation: {
+                        pulseRed: 'pulseRed 2s ease-in-out infinite',
+                        pulseGreen: 'pulseGreen 2s ease-in-out infinite',
+                        pulseBlue: 'pulseBlue 2s ease-in-out infinite',
+                        loading: 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    <style>
+        .glow-border {
+            box-shadow: 0 0 10px rgba(220, 38, 38, 0.4), 0 0 20px rgba(220, 38, 38, 0.1);
+            transition: all 0.3s ease;
+        }
+        .glow-border:hover {
+            box-shadow: 0 0 15px rgba(220, 38, 38, 0.7), 0 0 30px rgba(220, 38, 38, 0.3);
+            transform: translateY(-2px);
+        }
+        .glow-border-green {
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.4), 0 0 20px rgba(16, 185, 129, 0.1);
+            transition: all 0.3s ease;
+        }
+        .glow-border-green:hover {
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.7), 0 0 30px rgba(16, 185, 129, 0.3);
+            transform: translateY(-2px);
+        }
+        .glow-border-blue {
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.4), 0 0 20px rgba(59, 130, 246, 0.1);
+            transition: all 0.3s ease;
+        }
+        .glow-border-blue:hover {
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.7), 0 0 30px rgba(59, 130, 246, 0.3);
+            transform: translateY(-2px);
+        }
+        .motivation-card {
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 1.5rem;
+            background-color: #1F2937;
+            border-radius: 0.5rem;
+            border: 2px solid #DC2626;
+            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
+            transition: transform 0.3s ease;
+        }
+        .motivation-card:hover {
+            transform: scale(1.02);
+        }
+        .diet-card {
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 1.5rem;
+            background-color: #1F2937;
+            border-radius: 0.5rem;
+            border: 2px solid #10B981;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            transition: transform 0.3s ease;
+        }
+        .diet-card:hover {
+            transform: scale(1.02);
+        }
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(17, 24, 39, 0.95);
+            z-index: 50;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            overflow-y: auto;
+        }
+        /* Style for the new full-screen history modal */
+        #history-modal {
+            z-index: 60; /* Higher than auth modal */
+            padding: 1rem;
+        }
+        /* Updated grid for history log to include User ID/Name, Body Part, and Equipment */
+        .history-item {
+            display: grid;
+            grid-template-columns: 2fr 100px 100px 100px 150px 100px; /* Name | Body Part | Equipment | Duration | User | Date */
+            gap: 1rem;
+            padding: 1rem 0;
+            border-bottom: 1px solid #374151;
+        }
+        .history-item:last-child {
+            border-bottom: none;
+        }
+        .progress-bar {
+            height: 10px;
+            background-color: #374151;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #10B981;
+            transition: width 0.5s ease;
+        }
+        .bmi-indicator {
+            height: 12px;
+            width: 100%;
+            background: linear-gradient(to right, #10B981, #F59E0B, #EF4444);
+            border-radius: 6px;
+            margin-top: 5px;
+            position: relative;
+        }
+        .bmi-marker {
+            position: absolute;
+            top: -5px;
+            width: 4px;
+            height: 22px;
+            background-color: white;
+            border-radius: 2px;
+            transform: translateX(-50%);
+        }
+        /* AI Chat Bot Styles */
+        #ai-chat-bot {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        #chat-toggle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8B5CF6, #3B82F6);
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+            transition: all 0.3s ease;
+        }
+        #chat-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
+        }
+        #chat-box {
+            position: absolute;
+            bottom: 70px;
+            right: 0;
+            width: 350px;
+            height: 500px;
+            background: #1F2937;
+            border-radius: 15px;
+            border: 2px solid #8B5CF6;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .chat-header {
+            background: #8B5CF6;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .message {
+            max-width: 80%;
+            padding: 10px 15px;
+            border-radius: 18px;
+            margin-bottom: 10px;
+        }
+        .user-message {
+            align-self: flex-end;
+            background: #3B82F6;
+            color: white;
+        }
+        .bot-message {
+            align-self: flex-start;
+            background: #374151;
+            color: white;
+        }
+        .chat-input {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #374151;
+            background: #1F2937;
+        }
+        #chat-input-field {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #4B5563;
+            border-radius: 25px;
+            background: #111827;
+            color: white;
+            outline: none;
+        }
+        #chat-send {
+            background: #8B5CF6;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        .quick-questions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 10px 15px;
+            border-top: 1px solid #374151;
+        }
+        .quick-question {
+            background: #374151;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .quick-question:hover {
+            background: #4B5563;
+        }
+        /* Weight selector styles */
+        .weight-selector {
+            display: none;
+            margin-top: 10px;
+            padding: 10px;
+            background: #1F2937;
+            border-radius: 8px;
+            border: 1px solid #374151;
+        }
+        .weight-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .weight-option {
+            background: #374151;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .weight-option:hover {
+            background: #4B5563;
+        }
+        .weight-option.selected {
+            background: #DC2626;
+        }
+        /* Social login buttons */
+        .social-login-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+        .social-login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        .google-btn {
+            background: white;
+            color: #333;
+        }
+        .facebook-btn {
+            background: #1877F2;
+            color: white;
+        }
+        .github-btn {
+            background: #333;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-dark-primary text-gray-200 font-sans min-h-screen flex flex-col">
+
+    <!-- AI Chat Bot -->
+    <div id="ai-chat-bot">
+        <div id="chat-box">
+            <div class="chat-header">
+                <i class="ph ph-robot"></i> AI Fitness Assistant
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <div class="message bot-message">
+                    Hi! I'm your AI fitness assistant. How can I help you with workouts, nutrition, or fitness goals?
+                </div>
+            </div>
+            <div class="quick-questions">
+                <button class="quick-question" onclick="askQuickQuestion('Create a workout plan')">💪 Workout Plan</button>
+                <button class="quick-question" onclick="askQuickQuestion('Diet advice')">🍎 Nutrition</button>
+                <button class="quick-question" onclick="askQuickQuestion('Weight loss tips')">🔥 Weight Loss</button>
+                <button class="quick-question" onclick="askQuickQuestion('Muscle building')">🏋️ Muscle Gain</button>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="chat-input-field" placeholder="Ask about fitness or nutrition..." onkeypress="handleChatInput(event)">
+                <button id="chat-send" onclick="sendMessage()">
+                    <i class="ph ph-paper-plane-right"></i>
+                </button>
+            </div>
+        </div>
+        <button id="chat-toggle" onclick="toggleChat()">
+            <i class="ph ph-robot"></i>
+        </button>
+    </div>
+
+    <!-- Header / Navigation Bar -->
+    <header class="p-4 md:p-6 bg-dark-secondary sticky top-0 z-10 border-b border-gray-700/50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <!-- Logo and Title Section -->
+            <div class="flex items-center space-x-4">
+                <div class="flex flex-col">
+                    <h1 class="text-2xl font-extrabold text-accent-red animate-pulseRed">SYNTACTIC STRENGTH</h1>
+                    <p class="text-xs text-gray-400 uppercase tracking-wider">Natty Splitter</p>
+                </div>
+            </div>
+            <nav class="hidden md:flex space-x-6 text-sm font-semibold">
+                <a href="#wod" class="hover:text-accent-red transition duration-200">WOD</a>
+                <a href="#countdown" class="hover:text-accent-red transition duration-200">Start Time</a>
+                <a href="#nutrition" class="hover:text-accent-green transition duration-200">Nutrition</a>
+                <!-- Updated button to hold user data -->
+                <button id="header-auth-btn" class="bg-accent-red text-dark-primary px-4 py-1 rounded-full font-bold hover:bg-red-400 transition duration-300 shadow-lg">REGISTER</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow p-4 md:p-8">
+        <div class="max-w-7xl mx-auto">
+
+            <!-- Hero Section / Main Title -->
+            <section class="text-center py-12 md:py-24">
+                <h2 class="text-5xl md:text-7xl font-black uppercase tracking-tight text-white mb-4 leading-tight">
+                    <span class="text-accent-red">Natty</span>splitter
+                </h2>
+                <p class="text-lg md:text-xl text-gray-400 max-w-3xl mx-auto">
+                    The ultimate trial of skill, precision, and digital endurance. Are you ready to train for victory?
+                </p>
+            </section>
+
+            <!-- Competition Countdown -->
+            <section id="countdown" class="mb-16 md:mb-24 p-6 md:p-10 bg-dark-secondary rounded-xl glow-border">
+                <h3 class="text-center text-3xl font-bold text-white mb-8 uppercase tracking-widest">
+                    YOU CAN SEE YOUR CHANGES IN...
+                </h3>
+                
+                <!-- Countdown Duration Selector -->
+                <div class="flex justify-center mb-6">
+                    <div class="bg-dark-primary p-4 rounded-lg">
+                        <label for="countdown-duration" class="block text-sm font-medium text-gray-400 mb-2 text-center">Countdown Duration</label>
+                        <select id="countdown-duration" class="w-full p-2 rounded-lg bg-dark-secondary border border-gray-600 text-white focus:ring-accent-red focus:border-accent-red">
+                            <option value="30">30 Days</option>
+                            <option value="60">60 Days</option>
+                            <option value="90">90 Days</option>
+                            <option value="100" selected>100 Days</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="timer-display" class="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-8 text-center">
+                    <!-- Timer blocks will be populated by JavaScript -->
+                </div>
+            </section>
+            
+            <!-- Updated Workout of the Day (WOD) Section - Physical Reps -->
+            <section id="wod" class="mb-16 md:mb-24 p-6 md:p-10 bg-dark-secondary rounded-xl glow-border">
+                <h3 class="text-center text-3xl font-bold text-accent-red mb-6 uppercase tracking-widest">
+                    Workout of the Day (WOD) - Maximum Effort
+                </h3>
+                <div class="max-w-4xl mx-auto">
+                    <!-- Filters Section -->
+                    <div class="flex flex-col md:flex-row gap-4 mb-4 justify-center">
+                        <div>
+                            <label for="body-part-filter" class="block text-sm font-medium text-gray-400 mb-1">Target Body Part</label>
+                            <select id="body-part-filter" class="w-full md:w-48 p-2 rounded-lg bg-dark-primary border border-gray-600 text-white focus:ring-accent-red focus:border-accent-red">
+                                <!-- Options populated by JS -->
+                            </select>
+                        </div>
+                        <div>
+                            <label for="equipment-filter" class="block text-sm font-medium text-gray-400 mb-1">Available Equipment</label>
+                            <select id="equipment-filter" class="w-full md:w-48 p-2 rounded-lg bg-dark-primary border border-gray-600 text-white focus:ring-accent-red focus:border-accent-red">
+                                <!-- Options populated by JS -->
+                            </select>
+                        </div>
+                        <!-- Buttons Section -->
+                        <div class="md:self-end flex flex-col space-y-2">
+                            <button id="generate-wod-btn" class="w-full md:w-auto mt-4 md:mt-0 bg-accent-light text-dark-primary px-6 py-2.5 rounded-lg font-bold hover:bg-red-300 transition duration-300 shadow-lg uppercase text-sm">
+                                Generate Quick Rep
+                            </button>
+                            <!-- VIEW HISTORY BUTTON - Stays the same -->
+                            <button id="view-history-btn" class="w-full md:w-auto bg-gray-500 text-dark-primary px-6 py-2.5 rounded-lg font-black hover:bg-gray-400 transition duration-300 shadow-lg uppercase text-sm disabled:opacity-50">
+                                📜 Public Workout Log
+                            </button>
+                        </div>
+                        <!-- AI Trainer button remains -->
+                         <div class="md:self-end flex flex-col space-y-2">
+                             <button id="get-ai-plan-btn" class="w-full md:w-auto mt-4 md:mt-0 bg-accent-red text-dark-primary px-6 py-2.5 rounded-lg font-black hover:bg-red-400 transition duration-300 shadow-lg uppercase text-sm disabled:opacity-50">
+                                ✨ Get AI Trainer's Plan
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- API Message Area -->
+                    <p id="api-message" class="text-center text-sm text-gray-400 mb-4 h-5 animate-loading" style="display: none;">Loading...</p>
+
+                    <!-- Workout Display Area -->
+                    <div class="grid md:grid-cols-5 gap-6 p-6 bg-dark-primary rounded-xl border border-accent-red/50">
+                        
+                        <!-- Col 1-3: Workout Details -->
+                        <div class="md:col-span-3">
+                            <p id="exercise-equipment" class="text-base font-semibold text-accent-light mb-2 uppercase">
+                                --
+                            </p>
+                            <h4 id="exercise-name" class="text-3xl md:text-4xl font-extrabold text-accent-red mb-3">
+                                Select Your Filters
+                            </h4>
+                            <p id="exercise-details" class="text-lg text-gray-300 whitespace-pre-line mb-4">
+                                Choose your desired focus and available equipment, then click 'Generate Quick Rep' for a simple workout, or the 'AI Trainer's Plan' for a custom, detailed routine!
+                            </p>
+                            
+                            <!-- Weight Selector (New Feature) -->
+                            <div id="weight-selector" class="weight-selector">
+                                <p class="text-sm font-semibold text-accent-light mb-2">Select Weight (kg):</p>
+                                <div class="weight-options" id="weight-options">
+                                    <!-- Weight options will be populated by JavaScript -->
+                                </div>
+                            </div>
+                            
+                            <!-- Timer Controls and Selector -->
+                            <div class="space-y-3 mt-4">
+                                <!-- Duration Selector -->
+                                <div>
+                                    <label for="set-duration-select" class="block text-xs font-semibold text-gray-400 mb-1 uppercase">Set Duration</label>
+                                    <select id="set-duration-select" class="w-full md:w-48 p-2 rounded-lg bg-dark-secondary border border-gray-600 text-white focus:ring-accent-red focus:border-accent-red text-sm">
+                                        <option value="30">30 Seconds</option>
+                                        <option value="60" selected>1 Minute (60s)</option>
+                                        <option value="90">1 Minute 30 Seconds (90s)</option>
+                                        <option value="120">2 Minutes (120s)</option>
+                                        <option value="180">3 Minutes (180s)</option>
+                                        <option value="240">4 Minutes (240s)</option>
+                                        <option value="300">5 Minutes (300s)</option>
+                                    </select>
+                                </div>
+
+                                <!-- Start/Stop Buttons in a Row -->
+                                <div class="flex space-x-4">
+                                    <button id="start-workout-set-btn" class="flex-1 bg-accent-red text-dark-primary px-6 py-3 rounded-lg font-black uppercase hover:bg-red-400 transition duration-300 shadow-xl disabled:opacity-50">
+                                        START
+                                    </button>
+                                    <button id="stop-workout-set-btn" disabled class="flex-1 bg-gray-600 text-dark-primary px-6 py-3 rounded-lg font-black uppercase hover:bg-gray-500 transition duration-300 shadow-xl disabled:opacity-50">
+                                        PAUSE
+                                    </button>
+                                </div>
+
+                                <!-- Reset Button -->
+                                <button id="reset-workout-set-btn" class="w-full bg-dark-primary text-accent-light border border-accent-light/50 px-6 py-3 rounded-lg font-semibold uppercase hover:bg-dark-secondary transition duration-300 shadow-xl disabled:opacity-50">
+                                    RESET TIMER
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Col 4-5: Motivation and Timer -->
+                        <div class="md:col-span-2 space-y-4">
+                            <!-- Motivation Card Area -->
+                            <div id="motivation-card" class="motivation-card">
+                                <p class="text-xl font-bold text-accent-light">
+                                    "Initialize Your Workout."
+                                </p>
+                            </div>
+
+                            <!-- Timer Display -->
+                            <div class="text-center bg-dark-secondary p-3 rounded-lg border border-accent-light/50">
+                                <p class="text-sm uppercase tracking-widest text-gray-400">Set Timer (Variable)</p>
+                                <div id="set-timer-display" class="text-5xl font-extrabold text-accent-red leading-none">
+                                    01:00
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Nutrition Section -->
+            <section id="nutrition" class="mb-16 md:mb-24 p-6 md:p-10 bg-dark-secondary rounded-xl glow-border-green">
+                <h3 class="text-center text-3xl font-bold text-accent-green mb-6 uppercase tracking-widest">
+                    Nutrition & Diet Planning
+                </h3>
+                <div class="max-w-4xl mx-auto">
+                    <!-- Nutrition Inputs -->
+                    <div class="grid md:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-dark-primary p-6 rounded-xl border border-accent-green/50">
+                            <h4 class="text-xl font-bold text-accent-green mb-4 text-center">Health Assessment</h4>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="weight" class="block text-sm font-medium text-gray-400 mb-1">Weight (kg)</label>
+                                    <input type="number" id="weight" class="w-full p-3 rounded-lg bg-dark-secondary border border-gray-600 text-white focus:ring-accent-green focus:border-accent-green transition" placeholder="Enter your weight">
+                                </div>
+                                <div>
+                                    <label for="height" class="block text-sm font-medium text-gray-400 mb-1">Height (cm)</label>
+                                    <input type="number" id="height" class="w-full p-3 rounded-lg bg-dark-secondary border border-gray-600 text-white focus:ring-accent-green focus:border-accent-green transition" placeholder="Enter your height">
+                                </div>
+                                <div>
+                                    <label for="age" class="block text-sm font-medium text-gray-400 mb-1">Age</label>
+                                    <input type="number" id="age" class="w-full p-3 rounded-lg bg-dark-secondary border border-gray-600 text-white focus:ring-accent-green focus:border-accent-green transition" placeholder="Enter your age">
+                                </div>
+                                <div>
+                                    <label for="gender" class="block text-sm font-medium text-gray-400 mb-1">Gender</label>
+                                    <select id="gender" class="w-full p-3 rounded-lg bg-dark-secondary border border-gray-600 text-white focus:ring-accent-green focus:border-accent-green transition">
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="activity-level" class="block text-sm font-medium text-gray-400 mb-1">Activity Level</label>
+                                    <select id="activity-level" class="w-full p-3 rounded-lg bg-dark-secondary border border-gray-600 text-white focus:ring-accent-green focus:border-accent-green transition">
+                                        <option value="1.2">Sedentary (little or no exercise)</option>
+                                        <option value="1.375">Lightly active (light exercise 1-3 days/week)</option>
+                                        <option value="1.55" selected>Moderately active (moderate exercise 3-5 days/week)</option>
+                                        <option value="1.725">Very active (hard exercise 6-7 days/week)</option>
+                                        <option value="1.9">Extra active (very hard exercise, physical job)</option>
+                                    </select>
+                                </div>
+                                
+                                <button id="calculate-calories-btn" class="w-full bg-accent-green text-dark-primary p-3 rounded-lg font-black uppercase hover:bg-green-400 transition shadow-lg mt-4">
+                                    Analyze My Health
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-dark-primary p-6 rounded-xl border border-accent-green/50">
+                            <h4 class="text-xl font-bold text-accent-green mb-4 text-center">Your Health Analysis</h4>
+                            
+                            <div id="health-analysis" class="text-center mb-6">
+                                <p class="text-gray-400">Your health analysis will appear here</p>
+                                <div id="bmi-result" class="mt-4 hidden">
+                                    <p class="text-lg font-semibold text-accent-blue">BMI: <span id="bmi-value">0</span></p>
+                                    <p id="bmi-category" class="text-sm mt-1"></p>
+                                    <div class="bmi-indicator mt-2">
+                                        <div class="bmi-marker" id="bmi-marker" style="left: 50%;"></div>
+                                    </div>
+                                    <div class="flex justify-between text-xs text-gray-400 mt-1">
+                                        <span>Underweight</span>
+                                        <span>Normal</span>
+                                        <span>Overweight</span>
+                                        <span>Obese</span>
+                                    </div>
+                                </div>
+                                
+                                <div id="ideal-weight" class="mt-4 hidden">
+                                    <p class="text-lg font-semibold text-accent-blue">Ideal Weight Range</p>
+                                    <p id="ideal-weight-range" class="text-sm mt-1"></p>
+                                </div>
+                                
+                                <!-- Height Analysis (New Feature) -->
+                                <div id="height-analysis" class="mt-4 hidden">
+                                    <p class="text-lg font-semibold text-accent-blue">Height Analysis</p>
+                                    <p id="height-feedback" class="text-sm mt-1"></p>
+                                    <div id="height-exercises" class="mt-2 hidden">
+                                        <p class="text-xs font-semibold text-gray-400 mb-1">Height-Boosting Exercises:</p>
+                                        <ul class="text-xs text-gray-300 text-left list-disc pl-4">
+                                            <li>Hanging from a pull-up bar (30-60 seconds daily)</li>
+                                            <li>Cobra stretch (hold for 30 seconds, repeat 3-5 times)</li>
+                                            <li>Pelvic shifts (10-15 reps daily)</li>
+                                            <li>Swimming (30 minutes, 3-4 times a week)</li>
+                                            <li>Jumping exercises like skipping rope or basketball</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <!-- Activity Level Recommendation (New Feature) -->
+                                <div id="activity-recommendation" class="mt-4 hidden">
+                                    <p class="text-lg font-semibold text-accent-blue">Activity Recommendation</p>
+                                    <p id="activity-feedback" class="text-sm mt-1"></p>
+                                </div>
+                                
+                                <div id="recommendation" class="mt-4 hidden">
+                                    <p class="text-lg font-semibold text-accent-blue">Our Recommendation</p>
+                                    <p id="recommendation-text" class="text-sm mt-1"></p>
+                                </div>
+                                
+                                <div id="calorie-result" class="mt-4 hidden">
+                                    <p class="text-lg font-semibold text-accent-blue">Daily Calorie Target</p>
+                                    <div id="calorie-display" class="text-3xl font-extrabold text-accent-green mt-2">
+                                        <span id="calorie-value">0</span> kcal
+                                    </div>
+                                    <div id="macro-breakdown" class="mt-4 text-sm text-gray-300">
+                                        <div class="grid grid-cols-3 gap-2">
+                                            <div class="bg-dark-secondary p-2 rounded">
+                                                <p class="font-semibold">Protein</p>
+                                                <p id="protein-value">0g</p>
+                                            </div>
+                                            <div class="bg-dark-secondary p-2 rounded">
+                                                <p class="font-semibold">Carbs</p>
+                                                <p id="carbs-value">0g</p>
+                                            </div>
+                                            <div class="bg-dark-secondary p-2 rounded">
+                                                <p class="font-semibold">Fat</p>
+                                                <p id="fat-value">0g</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6">
+                                <button id="generate-diet-btn" class="w-full bg-accent-green text-dark-primary p-3 rounded-lg font-black uppercase hover:bg-green-400 transition shadow-lg disabled:opacity-50">
+                                    Generate AI Diet Plan
+                                </button>
+                                <p id="diet-message" class="text-center text-sm text-gray-400 mt-2 h-5"></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Diet Plan Display -->
+                    <div id="diet-plan-container" class="hidden">
+                        <div class="bg-dark-primary p-6 rounded-xl border border-accent-green/50">
+                            <h4 class="text-2xl font-bold text-accent-green mb-4 text-center">Your AI-Generated Diet Plan</h4>
+                            <div id="diet-plan-content" class="text-gray-300 whitespace-pre-line">
+                                <!-- Diet plan will be displayed here -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Diet Motivation Card -->
+                    <div class="mt-6">
+                        <div id="diet-motivation-card" class="diet-card">
+                            <p class="text-xl font-bold text-accent-green">
+                                "Nutrition is the foundation of all physical progress."
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer / CTA -->
+    <footer class="p-6 bg-dark-secondary border-t border-gray-700/50 text-center">
+        <p class="text-lg font-semibold mb-3">Ready to Max Out Your Skills?</p>
+        <button id="footer-auth-btn" class="bg-accent-red text-dark-primary text-xl px-8 py-3 rounded-full font-black uppercase hover:bg-red-400 transition duration-300 shadow-xl glow-border">
+            Secure Your Spot (Register Now)
+        </button>
+        <p class="text-sm text-gray-500 mt-4">&copy; 2025 Nattysplitter. Power by Synaptic Performance.</p>
+    </footer>
+
+    <!-- Sign-In/Registration Modal (Hidden by Default) -->
+    <div id="auth-modal" class="modal-backdrop transition duration-300 ease-in-out">
+        <div class="bg-dark-secondary p-8 md:p-10 rounded-xl glow-border max-w-lg w-11/12 mx-auto relative transform transition-transform duration-300 ease-out scale-95" id="auth-modal-content">
+            <!-- Close Button -->
+            <button id="close-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-accent-red transition">
+                <i class="ph-bold ph-x text-2xl"></i>
+            </button>
+
+            <h2 class="text-4xl font-extrabold text-accent-red mb-3 text-center">ACCESS TERMINAL</h2>
+            <p class="text-center text-gray-400 mb-8">Sign in or create your Syntactic Strength profile.</p>
+
+            <!-- Social Login Buttons -->
+            <div class="space-y-4 mb-6">
+                <button id="google-login-btn" class="social-login-btn google-btn">
+                    <i class="ph ph-google-logo"></i>
+                    Continue with Google
+                </button>
+                <button id="facebook-login-btn" class="social-login-btn facebook-btn">
+                    <i class="ph ph-facebook-logo"></i>
+                    Continue with Facebook
+                </button>
+                <button id="github-login-btn" class="social-login-btn github-btn">
+                    <i class="ph ph-github-logo"></i>
+                    Continue with GitHub
+                </button>
+            </div>
+
+            <!-- Separator -->
+            <div class="flex items-center my-6">
+                <div class="flex-grow border-t border-gray-700"></div>
+                <span class="flex-shrink mx-4 text-gray-500 text-sm">OR USE EMAIL</span>
+                <div class="flex-grow border-t border-gray-700"></div>
+            </div>
+
+            <!-- Email/Password Form -->
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-400 mb-1">Email</label>
+                    <input type="email" id="email" required class="w-full p-3 rounded-lg bg-dark-primary border border-gray-600 text-white focus:ring-accent-red focus:border-accent-red transition" placeholder="Enter your email">
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-400 mb-1">Password</label>
+                    <input type="password" id="password" required class="w-full p-3 rounded-lg bg-dark-primary border border-gray-600 text-white focus:ring-accent-red focus:border-accent-red transition" placeholder="Enter your password">
+                </div>
+                
+                <button type="submit" class="w-full bg-accent-red text-dark-primary p-3 rounded-lg font-black uppercase hover:bg-red-400 transition shadow-lg mt-4">
+                    LOGIN / CREATE ACCOUNT
+                </button>
+
+                <p class="text-center text-sm text-gray-500 pt-2">
+                    <a href="#" class="hover:text-accent-light transition">Forgot Password?</a>
+                </p>
+            </form>
+
+        </div>
+    </div>
+    
+    <!-- Workout History Modal (New Feature) -->
+    <div id="history-modal" class="modal-backdrop transition duration-300 ease-in-out">
+        <div class="bg-dark-secondary p-8 md:p-10 rounded-xl glow-border max-w-4xl w-11/12 mx-auto relative transform transition-transform duration-300 ease-out scale-95" id="history-modal-content">
+            <!-- Close Button -->
+            <button id="close-history-btn" class="absolute top-4 right-4 text-gray-400 hover:text-accent-red transition">
+                <i class="ph-bold ph-x text-2xl"></i>
+            </button>
+
+            <h2 class="text-4xl font-extrabold text-accent-red mb-6 text-center">PUBLIC WORKOUT LOG</h2>
+            <p class="text-center text-gray-400 mb-6">A real-time feed of all completed sets, open to everyone.</p>
+
+            <!-- History List Header - Updated grid columns -->
+            <div class="history-item font-bold text-gray-300 border-b-2 border-accent-red mb-2 pt-0">
+                <span class="uppercase text-sm">Workout Name</span>
+                <span class="uppercase text-sm text-center">Body Part</span>
+                <span class="uppercase text-sm text-center">Equipment</span>
+                <span class="uppercase text-sm text-center">Duration</span>
+                <span class="uppercase text-sm text-center">User</span>
+                <span class="uppercase text-sm text-center">Completed</span>
+            </div>
+
+            <!-- History List Container -->
+            <div id="workout-history-list" class="max-h-96 overflow-y-auto pr-2 space-y-2">
+                <!-- History items will be populated here -->
+                <p id="history-loading" class="text-center text-gray-500 py-8">Loading public log...</p>
+            </div>
+            
+            <p id="user-id-display" class="text-xs text-gray-600 mt-6 text-center"></p>
+
+        </div>
+    </div>
+    
+    <!-- JavaScript for Countdown Timer, WOD, and Modal -->
+    <script>
+        // --- Firebase Configuration ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAzf3ySF47i0n_T7kiyscgnslOMaJxajzE",
+            authDomain: "nattysplitter-5de8e.firebaseapp.com",
+            projectId: "nattysplitter-5de8e",
+            storageBucket: "nattysplitter-5de8e.firebasestorage.app",
+            messagingSenderId: "852931698553",
+            appId: "1:852931698553:web:6aa6e4a5324964db0ed9a8"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // --- Global Variables & Elements ---
+        let setTimerInterval = null;
+        let currentUser = null; // Firebase user object
+        let currentUserName = null; // Stores the user's name for personalization
+        let currentWorkoutDetails = 'Initialize Your Workout.'; // Stores the last generated workout details for the quote box
+        let currentSetDuration = 60; // Default set duration in seconds
+        let timeLeft = 60; // Current remaining time
+        let countdownInterval = null;
+        let currentCountdownDays = 100;
+        let userGoal = 'maintain'; // Default goal
+        let chatOpen = false;
+        let selectedWeight = null; // Track selected weight for exercises
+        let currentWorkout = null; // Store current workout for weight selection updates
+        let lastEquipmentType = null; // Track last equipment type to preserve weight selection
+
+        // AI Chat Bot Elements
+        const chatBox = document.getElementById('chat-box');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input-field');
+        const chatToggle = document.getElementById('chat-toggle');
+
+        const nameEl = document.getElementById('exercise-name');
+        const detailsEl = document.getElementById('exercise-details');
+        const equipmentEl = document.getElementById('exercise-equipment');
+        const motivationCardEl = document.getElementById('motivation-card');
+        const startWorkoutSetBtn = document.getElementById('start-workout-set-btn');
+        const stopWorkoutSetBtn = document.getElementById('stop-workout-set-btn'); 
+        const resetWorkoutSetBtn = document.getElementById('reset-workout-set-btn'); 
+        const durationSelectEl = document.getElementById('set-duration-select'); 
+        const timerDisplay = document.getElementById('set-timer-display');
+        const aiBtn = document.getElementById('get-ai-plan-btn');
+        const quickBtn = document.getElementById('generate-wod-btn');
+        const messageEl = document.getElementById('api-message');
+        const countdownDurationEl = document.getElementById('countdown-duration');
+        const weightSelector = document.getElementById('weight-selector');
+        const weightOptions = document.getElementById('weight-options');
+
+        // Nutrition elements
+        const calculateCaloriesBtn = document.getElementById('calculate-calories-btn');
+        const generateDietBtn = document.getElementById('generate-diet-btn');
+        const healthAnalysis = document.getElementById('health-analysis');
+        const bmiResult = document.getElementById('bmi-result');
+        const bmiValue = document.getElementById('bmi-value');
+        const bmiCategory = document.getElementById('bmi-category');
+        const bmiMarker = document.getElementById('bmi-marker');
+        const idealWeight = document.getElementById('ideal-weight');
+        const idealWeightRange = document.getElementById('ideal-weight-range');
+        const heightAnalysis = document.getElementById('height-analysis');
+        const heightFeedback = document.getElementById('height-feedback');
+        const heightExercises = document.getElementById('height-exercises');
+        const activityRecommendation = document.getElementById('activity-recommendation');
+        const activityFeedback = document.getElementById('activity-feedback');
+        const recommendation = document.getElementById('recommendation');
+        const recommendationText = document.getElementById('recommendation-text');
+        const calorieResult = document.getElementById('calorie-result');
+        const calorieValue = document.getElementById('calorie-value');
+        const proteinValue = document.getElementById('protein-value');
+        const carbsValue = document.getElementById('carbs-value');
+        const fatValue = document.getElementById('fat-value');
+        const dietPlanContainer = document.getElementById('diet-plan-container');
+        const dietPlanContent = document.getElementById('diet-plan-content');
+        const dietMessage = document.getElementById('diet-message');
+        const dietMotivationCard = document.getElementById('diet-motivation-card');
+
+        // --- Modal Elements ---
+        const authModal = document.getElementById('auth-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const headerAuthBtn = document.getElementById('header-auth-btn');
+        const footerAuthBtn = document.getElementById('footer-auth-btn');
+        const authModalContent = document.getElementById('auth-modal-content');
+
+        // --- Social Login Buttons ---
+        const googleLoginBtn = document.getElementById('google-login-btn');
+        const facebookLoginBtn = document.getElementById('facebook-login-btn');
+        const githubLoginBtn = document.getElementById('github-login-btn');
+
+        // --- History Modal Elements (NEW) ---
+        const viewHistoryBtn = document.getElementById('view-history-btn');
+        const historyModal = document.getElementById('history-modal');
+        const closeHistoryBtn = document.getElementById('close-history-btn');
+        const historyModalContent = document.getElementById('history-modal-content');
+        const workoutHistoryList = document.getElementById('workout-history-list');
+        const userIdDisplay = document.getElementById('user-id-display');
+        
+        // --- Motivational Quotes (Synctactic Strength Theme) ---
+        const motivationalQuotes = [
+            "Syntax is strength. Reps are results.",
+            "Your next rep starts now. Focus.",
+            "The code never lies. Neither does the effort.",
+            "Push past the parse errors. Achieve full compilation.",
+            "Maximize your throughput. Minimize your rest.",
+            "If it doesn't challenge you, it doesn't change you.",
+            "Discipline equals freedom. Start the set.",
+            "The final lift is always in your mind.",
+            "Commit the change. Feel the burn.",
+            "One step back, two steps forward. Never quit."
+        ];
+
+        // --- Nutrition Quotes ---
+        const nutritionQuotes = [
+            "You can't out-train a bad diet.",
+            "Food is fuel, not therapy.",
+            "Abs are made in the kitchen.",
+            "Eat for the body you want, not the body you have.",
+            "Nutrition is the foundation of all physical progress.",
+            "Your body is a reflection of your lifestyle choices.",
+            "Healthy eating is a form of self-respect.",
+            "Food is not just calories, it's information.",
+            "The food you eat can be either the safest form of medicine or the slowest form of poison.",
+            "Don't dig your grave with your own knife and fork."
+        ];
+
+        // --- Authentication Functions ---
+        
+        // Initialize authentication state
+        const initAuth = () => {
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    // User is signed in
+                    currentUser = user;
+                    currentUserName = user.displayName || user.email || 'Anonymous Athlete';
+                    console.log('User signed in:', currentUserName);
+                    updateUserUI();
+                    setMotivationQuote(nameEl.textContent, currentWorkoutDetails);
+                } else {
+                    // User is signed out
+                    currentUser = null;
+                    currentUserName = null;
+                    console.log('User signed out');
+                    updateUserUI();
+                    setMotivationQuote(nameEl.textContent, currentWorkoutDetails);
+                }
+            });
+        };
+
+        // Google Sign In
+        const signInWithGoogle = () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    console.log('Google sign in successful');
+                    closeAuthModal();
+                })
+                .catch((error) => {
+                    console.error('Google sign in error:', error);
+                    alert('Failed to sign in with Google: ' + error.message);
+                });
+        };
+
+        // Facebook Sign In
+        const signInWithFacebook = () => {
+            const provider = new firebase.auth.FacebookAuthProvider();
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    console.log('Facebook sign in successful');
+                    closeAuthModal();
+                })
+                .catch((error) => {
+                    console.error('Facebook sign in error:', error);
+                    alert('Failed to sign in with Facebook: ' + error.message);
+                });
+        };
+
+        // GitHub Sign In
+        const signInWithGitHub = () => {
+            const provider = new firebase.auth.GithubAuthProvider();
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    console.log('GitHub sign in successful');
+                    closeAuthModal();
+                })
+                .catch((error) => {
+                    console.error('GitHub sign in error:', error);
+                    alert('Failed to sign in with GitHub: ' + error.message);
+                });
+        };
+
+        // Email/Password Sign Up
+        const signUpWithEmail = (email, password) => {
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((result) => {
+                    console.log('Email sign up successful');
+                    closeAuthModal();
+                })
+                .catch((error) => {
+                    console.error('Email sign up error:', error);
+                    alert('Failed to create account: ' + error.message);
+                });
+        };
+
+        // Email/Password Sign In
+        const signInWithEmail = (email, password) => {
+            auth.signInWithEmailAndPassword(email, password)
+                .then((result) => {
+                    console.log('Email sign in successful');
+                    closeAuthModal();
+                })
+                .catch((error) => {
+                    console.error('Email sign in error:', error);
+                    alert('Failed to sign in: ' + error.message);
+                });
+        };
+
+        // Sign Out
+        const signOut = () => {
+            auth.signOut()
+                .then(() => {
+                    console.log('User signed out successfully');
+                })
+                .catch((error) => {
+                    console.error('Sign out error:', error);
+                });
+        };
+
+        // --- AI Chat Bot Functions ---
+        function toggleChat() {
+            chatOpen = !chatOpen;
+            chatBox.style.display = chatOpen ? 'flex' : 'none';
+            chatToggle.innerHTML = chatOpen ? '<i class="ph ph-x"></i>' : '<i class="ph ph-robot"></i>';
+        }
+
+        function handleChatInput(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const message = chatInput.value.trim();
+            if (message === '') return;
+            
+            addMessage(message, 'user');
+            chatInput.value = '';
+            
+            // Add loading indicator
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message bot-message';
+            loadingDiv.id = 'loading-message';
+            loadingDiv.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Thinking...';
+            chatMessages.appendChild(loadingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            try {
+                const response = await generateAIResponse(message);
+                loadingDiv.remove();
+                addMessage(response, 'bot');
+            } catch (error) {
+                loadingDiv.remove();
+                addMessage('Sorry, I encountered an error. Please try again or use our fallback responses!', 'bot');
+            }
+        }
+
+        async function askQuickQuestion(question) {
+            addMessage(question, 'user');
+            
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message bot-message';
+            loadingDiv.id = 'loading-message';
+            loadingDiv.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Thinking...';
+            chatMessages.appendChild(loadingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            try {
+                const response = await generateAIResponse(question);
+                loadingDiv.remove();
+                addMessage(response, 'bot');
+            } catch (error) {
+                loadingDiv.remove();
+                addMessage('Sorry, I encountered an error. Please try again!', 'bot');
+            }
+        }
+
+        function addMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            messageDiv.textContent = text;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function generateAIResponse(message) {
+            const lowerMessage = message.toLowerCase();
+            
+            // Handle greetings first with personalized name if user is registered
+            if (lowerMessage.includes('hi') || lowerMessage.includes('hey') || lowerMessage.includes('hello')) {
+                if (currentUserName && currentUserName !== 'Anonymous Athlete') {
+                    const firstName = currentUserName.split(' ')[0];
+                    return `Hi ${firstName}! How are you? What can I do for you today regarding fitness, nutrition, or workouts?`;
+                } else {
+                    return "Hi there! How are you? What can I do for you today regarding fitness, nutrition, or workouts?";
+                }
+            }
+            
+            // First try using AI API (OpenRouter with free AI models)
+            try {
+                const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer sk-or-v1-0000000000000000000000000000000000000000000000000000000000000000', // Public access
+                        'HTTP-Referer': window.location.origin
+                    },
+                    body: JSON.stringify({
+                        model: "google/gemini-flash-1.5-8b",
+                        messages: [
+                            {
+                                role: "system",
+                                content: "You are an expert fitness coach and nutritionist. Provide detailed, accurate, and helpful fitness and nutrition advice. Keep responses concise but informative (2-3 sentences). Focus on actionable advice."
+                            },
+                            {
+                                role: "user",
+                                content: message
+                            }
+                        ],
+                        max_tokens: 200,
+                        temperature: 0.7
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.choices && data.choices[0] && data.choices[0].message) {
+                        return data.choices[0].message.content.trim();
+                    }
+                }
+            } catch (error) {
+                console.log('AI API failed, using fallback responses');
+            }
+            
+            // Fallback to intelligent pattern matching if API fails
+            // Workout-related queries
+            if (lowerMessage.includes('workout') || lowerMessage.includes('exercise') || lowerMessage.includes('training') || lowerMessage.includes('routine')) {
+                const workouts = [
+                    "For strength training, focus on compound movements: Squats, Deadlifts, Bench Press. 3-4 sets of 6-8 reps with heavy weight and proper form.",
+                    "For muscle building: 8-12 reps per set, 3-4 sets per exercise. Focus on progressive overload each week by increasing weight or reps.",
+                    "For endurance: 15-20 reps per set with lighter weight. Include circuit training with minimal rest between sets (30-60 seconds).",
+                    "Full body workout structure: Squats (legs), Bench Press (chest), Barbell Rows (back), Shoulder Press, Pull-ups (back/biceps). 3 sets of 8-12 reps each.",
+                    "Push-pull-legs split: Day 1 - Chest/Shoulders/Triceps, Day 2 - Back/Biceps, Day 3 - Legs/Abs. Rest or light cardio between training days.",
+                    "Beginner program: Start with bodyweight exercises and gradually add resistance. Focus on mastering form before adding weight to prevent injuries.",
+                    "Advanced training: Implement drop sets, supersets, and time under tension techniques. Prioritize compound movements and ensure adequate recovery."
+                ];
+                return workouts[Math.floor(Math.random() * workouts.length)];
+            }
+            
+            // Nutrition-related queries
+            if (lowerMessage.includes('diet') || lowerMessage.includes('nutrition') || lowerMessage.includes('food') || lowerMessage.includes('eat') || lowerMessage.includes('meal')) {
+                const nutritionTips = [
+                    "Protein priority: Aim for 1.6-2.2g per kg of body weight. Include lean meats, fish, eggs, dairy, legumes, and plant-based proteins in every meal.",
+                    "Complex carbs timing: Whole grains, sweet potatoes, oats, quinoa provide sustained energy. Time carb intake around workouts for optimal glycogen replenishment.",
+                    "Essential fats: Avocado, nuts, olive oil, fatty fish (salmon, mackerel) are crucial for hormone production, joint health, and vitamin absorption. Target 20-30% of daily calories.",
+                    "Hydration protocol: 3-4 liters of water daily minimum. Increase intake during intense training or hot weather. Electrolytes important for sessions over 1 hour.",
+                    "Meal frequency: Eat every 3-4 hours to maintain stable blood sugar and muscle protein synthesis. Post-workout meal within 2 hours with 20-40g protein and 40-80g carbs.",
+                    "Portion control: Use your hand as a guide - palm for protein, cupped hand for carbs, thumb for fats, fist for vegetables.",
+                    "Pre-workout fueling: Consume easily digestible carbs 30-60 minutes before training. Banana, rice cake, or small bowl of oatmeal work well."
+                ];
+                return nutritionTips[Math.floor(Math.random() * nutritionTips.length)];
+            }
+            
+            // Weight loss queries
+            if (lowerMessage.includes('weight loss') || lowerMessage.includes('lose weight') || lowerMessage.includes('fat loss') || lowerMessage.includes('cut') || lowerMessage.includes('deficit')) {
+                const weightLossTips = [
+                    "Create a sustainable calorie deficit of 500-750 calories daily for safe weight loss of 0.5-1kg per week. Track intake for accuracy.",
+                    "Dual approach: Combine moderate cardio (30-45 mins, 3-5x/week) with resistance training to preserve muscle mass while losing fat. Muscle burns more calories at rest.",
+                    "High-protein advantage: Consume 30% protein, 40% carbs, 30% fat. Protein increases satiety, preserves muscle, and boosts metabolism through thermic effect of food.",
+                    "Consistency beats perfection: Track food intake honestly and stay consistent. One cheat meal per week won't derail progress if you remain consistent otherwise.",
+                    "Intermittent fasting options: 16:8 protocol (fast for 16 hours, eat within 8-hour window) can aid calorie control but total daily calories still matter most for weight loss."
+                ];
+                return weightLossTips[Math.floor(Math.random() * weightLossTips.length)];
+            }
+            
+            // Muscle building queries
+            if (lowerMessage.includes('muscle') || lowerMessage.includes('gain') || lowerMessage.includes('bulk') || lowerMessage.includes('hypertrophy')) {
+                const muscleTips = [
+                    "Surplus strategy: Create 300-500 calorie surplus daily. Focus on progressive overload in your lifts each week - add 2.5-5kg or 1-2 reps when possible.",
+                    "Optimal protein timing: 1.6-2.2g per kg body weight distributed across 4-5 meals. Carbs provide training energy, healthy fats support hormone production.",
+                    "Training frequency: Hit each muscle group 2x per week minimum. Focus on compound movements (squats, deadlifts, presses) for maximum hormonal response.",
+                    "Recovery is growth: Get 7-9 hours quality sleep nightly. Muscle growth occurs during recovery, not training. Manage stress and prioritize rest days.",
+                    "Realistic expectations: Aim for 0.25-0.5kg muscle gain per month naturally. Track progress with body measurements and progress photos, not just weight scale."
+                ];
+                return muscleTips[Math.floor(Math.random() * muscleTips.length)];
+            }
+            
+            // Specific exercise questions
+            if (lowerMessage.includes('squat') || lowerMessage.includes('deadlift') || lowerMessage.includes('bench') || lowerMessage.includes('row') || lowerMessage.includes('press')) {
+                const exerciseTips = {
+                    squat: "Squat form essentials: Keep chest up, back straight, knees tracking over toes. Go as deep as you can while maintaining form. Drive through entire foot, especially heels. Breathe out on the way up.",
+                    deadlift: "Deadlift technique: Start with bar over mid-foot. Keep back flat, shoulders over bar. Drive through heels while maintaining neutral spine. Don't round your back. Engage lats and core throughout.",
+                    bench: "Bench press setup: Retract shoulder blades onto bench, create slight arch. Feet firmly on floor. Lower bar with control to lower chest. Drive through feet and press explosively but controlled.",
+                    pullup: "Pull-up mastery: Hang fully extended, engage lats first. Pull elbows down and back, bringing chest to bar. Lower with control. Use assisted versions or negatives if needed for progression.",
+                    row: "Row variations: Keep torso parallel to floor, pull weight to lower ribcage. Squeeze shoulder blades at peak contraction. Control negative portion. Maintain neutral spine throughout movement."
+                };
+                
+                if (lowerMessage.includes('squat')) return exerciseTips.squat;
+                if (lowerMessage.includes('deadlift')) return exerciseTips.deadlift;
+                if (lowerMessage.includes('bench')) return exerciseTips.bench;
+                if (lowerMessage.includes('pull') || lowerMessage.includes('chin')) return exerciseTips.pullup;
+                if (lowerMessage.includes('row')) return exerciseTips.row;
+            }
+            
+            // Recovery questions
+            if (lowerMessage.includes('recovery') || lowerMessage.includes('rest') || lowerMessage.includes('sore') || lowerMessage.includes('muscle') || lowerMessage.includes('fatigue')) {
+                const recoveryTips = [
+                    "Recovery essentials: Prioritize 7-9 hours of quality sleep, stay well-hydrated (3-4L water), incorporate foam rolling and dynamic stretching post-workout.",
+                    "DOMS management: Delayed Onset Muscle Soreness is normal after new exercises or increased intensity. Light activity (walking, yoga) can increase blood flow and alleviate soreness without overdoing it.",
+                    "Nutrition for recovery: Consume protein (20-40g) within 2 hours post-workout. Include fast-digesting carbs to replenish glycogen. Consider anti-inflammatory foods like tart cherry juice or omega-3s.",
+                    "Active recovery: On rest days, perform light cardio, mobility work, or stretching. Avoid complete inactivity. Movement promotes healing through increased blood circulation.",
+                    "Sleep optimization: Maintain consistent sleep schedule. Reduce blue light 1-2 hours before bed. Keep room cool and dark. Sleep quality directly impacts muscle recovery and hormone production."
+                ];
+                return recoveryTips[Math.floor(Math.random() * recoveryTips.length)];
+            }
+            
+            // Cardio questions
+            if (lowerMessage.includes('cardio') || lowerMessage.includes('running') || lowerMessage.includes('hiit') || lowerMessage.includes('endurance')) {
+                const cardioTips = [
+                    "Fat loss cardio: 3-5 sessions of 30-45 minutes moderate intensity (60-70% max heart rate) per week, or 2-3 HIIT sessions (20-30 mins). Don't neglect resistance training.",
+                    "HIIT protocol: 20-30 seconds maximum effort followed by 40-60 seconds active recovery, repeated 8-12 rounds. Warm up 5 mins, cool down 5 mins. Not recommended daily.",
+                    "Balanced approach: If muscle building is primary goal, limit cardio to 2-3 sessions per week. Excessive cardio can interfere with muscle gains and recovery capacity.",
+                    "Low-impact options: Swimming, cycling, elliptical are excellent for joint health. Perfect for active recovery or when dealing with lower body injuries.",
+                    "Cardio timing: Separate cardio from resistance training when possible. If done together, perform resistance training first to preserve strength and power output."
+                ];
+                return cardioTips[Math.floor(Math.random() * cardioTips.length)];
+            }
+            
+            // Supplements questions
+            if (lowerMessage.includes('supplement') || lowerMessage.includes('protein') || lowerMessage.includes('creatine') || lowerMessage.includes('vitamin') || lowerMessage.includes('pre-workout')) {
+                const supplementTips = [
+                    "Protein supplementation: Whey protein is convenient post-workout due to fast absorption. Not necessary if meeting needs through whole foods, but helpful for convenience and timing.",
+                    "Creatine monohydrate: Most researched and effective supplement for strength and muscle gains. 5g daily, timing doesn't matter. Increases ATP production for explosive movements. Consider 20g loading for 5 days initially.",
+                    "Pre-workout consideration: Can provide energy boost through caffeine (150-300mg). Be mindful of content and timing - not recommended close to bedtime. Often contains beta-alanine, citrulline malate for performance.",
+                    "Vitamin D and Omega-3: Common deficiencies. Vitamin D supports immune function and bone health (1000-2000 IU daily). Omega-3s reduce inflammation and support heart health (1-2g EPA/DHA daily).",
+                    "Post-workout stack: Fast-digesting protein (20-40g), simple carbs (40-80g), and creatine taken together maximizes muscle protein synthesis and glycogen replenishment."
+                ];
+                return supplementTips[Math.floor(Math.random() * supplementTips.length)];
+            }
+            
+            // Form and technique
+            if (lowerMessage.includes('form') || lowerMessage.includes('technique') || lowerMessage.includes('proper') || lowerMessage.includes('correct')) {
+                return "Proper form is non-negotiable for safety and effectiveness. Start light to master technique before adding weight. Key principles: controlled movements, full range of motion, neutral spine, proper breathing. Consider recording yourself or working with a trainer initially.";
+            }
+            
+            // Motivation
+            if (lowerMessage.includes('motivate') || lowerMessage.includes('difficult') || lowerMessage.includes('stuck') || lowerMessage.includes('plateau')) {
+                return "Progress isn't always linear. Plateaus are normal. Track multiple metrics (strength, measurements, photos, energy levels). Consider deload weeks, program variation, or intensity techniques. Celebrate small wins. Consistency compounds over time.";
+            }
+            
+            // General fitness advice
+            const generalTips = [
+                "Consistency beats intensity: Training 3-4x per week consistently yields better results than sporadic 6x weeks followed by weeks off. Build sustainable habits.",
+                "Form over ego: Focus on proper form and controlled movements over heavy weight to prevent injuries and maximize muscle activation. You'll lift heavier longer-term with better technique.",
+                "Listen to your body: Rest when needed for injury prevention, but distinguish between mental fatigue and physical pain. Push through mental barriers, not physical pain.",
+                "Goal-driven programming: Set specific, measurable goals (e.g., 'Add 20kg to deadlift in 12 weeks'). Structure your training plan accordingly. Track progress weekly.",
+                "Nutrition is foundation: Remember that nutrition is approximately 70% of body composition results, training is 30%. You cannot out-train poor nutrition habits.",
+                "Periodization works: Implement progressive overload with planned deloads every 4-6 weeks. Volume, intensity, and frequency should vary. Avoid doing the same workout indefinitely.",
+                "Recovery tools: Utilize massage, stretching, foam rolling, cold/heat therapy, and stress management alongside your training. Recovery quality determines training capacity."
+            ];
+            
+            return generalTips[Math.floor(Math.random() * generalTips.length)];
+        }
+
+        // --- UI / Auth Handlers ---
+
+        // Updates the header/footer buttons based on the login state
+        const updateUserUI = () => {
+            if (currentUser) {
+                const firstName = currentUserName.split(' ')[0];
+                const welcomeText = `Welcome, ${firstName}`;
+                headerAuthBtn.textContent = welcomeText;
+                headerAuthBtn.classList.remove('bg-accent-red');
+                headerAuthBtn.classList.add('bg-white', 'text-dark-primary');
+                
+                footerAuthBtn.textContent = welcomeText;
+                footerAuthBtn.classList.remove('bg-accent-red');
+                footerAuthBtn.classList.add('bg-white', 'text-dark-primary', 'text-base', 'px-4');
+
+                // If logged in, clicking the button should show profile options
+                headerAuthBtn.removeEventListener('click', openAuthModal);
+                footerAuthBtn.removeEventListener('click', openAuthModal);
+                
+                headerAuthBtn.addEventListener('click', () => {
+                    // Show profile dropdown or sign out option
+                    if (confirm('Do you want to sign out?')) {
+                        signOut();
+                    }
+                });
+                
+                footerAuthBtn.addEventListener('click', () => {
+                    // Show profile dropdown or sign out option
+                    if (confirm('Do you want to sign out?')) {
+                        signOut();
+                    }
+                });
+
+                // Update user ID display
+                userIdDisplay.textContent = `Your User ID: ${currentUser.uid}`;
+            } else {
+                headerAuthBtn.textContent = 'REGISTER';
+                headerAuthBtn.classList.add('bg-accent-red');
+                headerAuthBtn.classList.remove('bg-white', 'text-dark-primary');
+
+                footerAuthBtn.textContent = 'Secure Your Spot (Register Now)';
+                footerAuthBtn.classList.add('bg-accent-red');
+                footerAuthBtn.classList.remove('bg-white', 'text-dark-primary', 'text-base', 'px-4');
+
+                headerAuthBtn.addEventListener('click', openAuthModal);
+                footerAuthBtn.addEventListener('click', openAuthModal);
+
+                // Clear user ID display
+                userIdDisplay.textContent = '';
+            }
+        };
+
+        // --- Auth Modal Logic ---
+        const openAuthModal = () => {
+            authModal.style.display = 'flex';
+            setTimeout(() => {
+                authModalContent.classList.remove('scale-95');
+                authModalContent.classList.add('scale-100');
+            }, 10);
+            document.body.style.overflow = 'hidden';
+        }
+
+        const closeAuthModal = () => {
+            authModalContent.classList.remove('scale-100');
+            authModalContent.classList.add('scale-95');
+            setTimeout(() => {
+                authModal.style.display = 'none';
+            }, 300);
+            document.body.style.overflow = '';
+        }
+
+        // --- History Modal Logic (NEW) ---
+        const openHistoryModal = () => {
+            historyModal.style.display = 'flex';
+            setTimeout(() => {
+                historyModalContent.classList.remove('scale-95');
+                historyModalContent.classList.add('scale-100');
+            }, 10);
+            document.body.style.overflow = 'hidden';
+        }
+
+        const closeHistoryModal = () => {
+            historyModalContent.classList.remove('scale-100');
+            historyModalContent.classList.add('scale-95');
+            setTimeout(() => {
+                historyModal.style.display = 'none';
+            }, 300);
+            document.body.style.overflow = '';
+        }
+        
+        // --- Motivation Logic ---
+        const setMotivationQuote = (workoutName, details) => {
+             let quoteText;
+             // Only format details if they are meaningful, not the initial placeholder
+             let detailsText = (details && details !== 'Initialize Your Workout.') 
+                 ? `<span class="block mt-4 text-sm font-normal text-gray-400 border-t border-gray-700 pt-4 whitespace-pre-line">${details}</span>` 
+                 : `<span class="block mt-4 text-sm font-normal text-gray-400 border-t border-gray-700 pt-4">Generate a plan to see your motivation details here!</span>`;
+             
+             if (currentUserName) {
+                const firstName = currentUserName.split(' ')[0];
+                quoteText = `You got this, ${firstName}! Nothing is impossible.`;
+             } else {
+                 const randomIndex = Math.floor(Math.random() * motivationalQuotes.length);
+                 quoteText = motivationalQuotes[randomIndex];
+             }
+             
+             motivationCardEl.innerHTML = `
+                 <div class="flex flex-col">
+                    <p class="text-xl font-bold text-accent-light">"${quoteText}"</p>
+                    ${detailsText}
+                 </div>
+             `;
+        }
+
+        // --- Weight Selection Logic (NEW) ---
+        const showWeightSelector = (equipment) => {
+            // Clear previous options
+            weightOptions.innerHTML = '';
+            
+            // Only clear weight selection if switching equipment types
+            if (lastEquipmentType && lastEquipmentType !== equipment) {
+                selectedWeight = null;
+            }
+            
+            // Only show for dumbbell and barbell exercises
+            if (equipment === 'Dumbbells' || equipment === 'Barbell') {
+                // Create weight options based on equipment
+                let weights = [];
+                if (equipment === 'Dumbbells') {
+                    weights = [2, 4, 6, 8, 10, 12, 15, 20, 25, 30, 35, 40];
+                } else if (equipment === 'Barbell') {
+                    weights = [20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 140, 160, 180, 200];
+                }
+                
+                // Create weight buttons
+                weights.forEach(weight => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'weight-option';
+                    button.textContent = `${weight}kg`;
+                    
+                    // Mark as selected if this weight matches the previously selected weight
+                    if (selectedWeight === weight) {
+                        button.classList.add('selected');
+                    }
+                    
+                    button.addEventListener('click', () => {
+                        // Remove selected class from all buttons
+                        document.querySelectorAll('.weight-option').forEach(btn => {
+                            btn.classList.remove('selected');
+                        });
+                        // Add selected class to clicked button
+                        button.classList.add('selected');
+                        selectedWeight = weight;
+                        
+                        // Update display with workout details now that weight is selected
+                        if (currentWorkout) {
+                            detailsEl.textContent = currentWorkout.details;
+                            setMotivationQuote(currentWorkout.name, currentWorkout.details);
+                        }
+                    });
+                    weightOptions.appendChild(button);
+                });
+                
+                // Show the weight selector
+                weightSelector.style.display = 'block';
+                lastEquipmentType = equipment;
+            } else {
+                // Hide the weight selector for other equipment
+                weightSelector.style.display = 'none';
+                lastEquipmentType = null;
+            }
+        }
+
+        const updateWODDisplay = (workoutName, equipment, details) => {
+            equipmentEl.textContent = `EQUIPMENT: ${equipment.toUpperCase()}`;
+            nameEl.textContent = workoutName;
+            detailsEl.textContent = details;
+            
+            // Show weight selector if applicable
+            showWeightSelector(equipment);
+            
+            // Store details for the quote box
+            currentWorkoutDetails = details;
+            
+            // Update quote box with workout info and personalized message
+            setMotivationQuote(workoutName, currentWorkoutDetails); 
+
+            // Enable start button and reset timer
+            resetTimer(); 
+        };
+        
+        // --- Timer Logic ---
+
+        // Helper function to format seconds into MM:SS
+        const formatTime = (seconds) => {
+            const minutes = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        };
+
+        // Function to update duration from selector
+        const updateSetDuration = () => {
+            currentSetDuration = parseInt(durationSelectEl.value, 10);
+            resetTimer(); // Reset the timer when duration changes
+        };
+
+        // Function to stop/pause the timer (isPause=false means a full stop, not just pausing for resumption)
+        const stopTimer = (isPause = true) => {
+            if (setTimerInterval) {
+                clearInterval(setTimerInterval);
+                setTimerInterval = null;
+            }
+            
+            // If it's a pause event, enable start button for resumption
+            if (isPause) {
+                startWorkoutSetBtn.disabled = false;
+                stopWorkoutSetBtn.disabled = true;
+            }
+        }
+
+        // Function to reset the timer to the selected duration
+        const resetTimer = () => {
+            stopTimer(false); // Stop the interval, but don't re-enable Start/Pause based on 'pause' state
+            
+            timeLeft = currentSetDuration;
+            timerDisplay.textContent = formatTime(timeLeft);
+            timerDisplay.classList.remove('text-danger', 'animate-pulse'); // Clear any time-up animation
+
+            // Enable start button and disable stop button
+            startWorkoutSetBtn.disabled = false;
+            stopWorkoutSetBtn.disabled = true;
+
+            // Ensure quote reverts to workout details
+            setMotivationQuote(nameEl.textContent, currentWorkoutDetails); 
+        }
+        
+        // Function to save workout history to the PUBLIC log
+        const saveWorkoutToHistory = async () => {
+            if (!currentUser) {
+                alert('Please sign in to save your workout to the public log!');
+                return;
+            }
+
+            const userId = currentUser.uid;
+            const userName = currentUserName || 'Anonymous Athlete';
+
+            try {
+                // Create a new history item
+                const listItem = document.createElement('div');
+                listItem.className = 'history-item text-sm text-gray-200 hover:bg-dark-primary transition rounded-lg px-2';
+                
+                const date = new Date();
+                const dateString = date.toLocaleDateString('en-US', {
+                    month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+                const durationFormatted = formatTime(currentSetDuration);
+                
+                // Get the user identifier. Use the full name if available, otherwise the full UID.
+                const userDisplay = userName && userName !== 'Anonymous Athlete' 
+                    ? userName : userId;
+
+                // Add weight info if available
+                const weightInfo = selectedWeight ? ` | ${selectedWeight}kg` : '';
+                
+                // Get body part and equipment from currentWorkout
+                const bodyPart = currentWorkout && currentWorkout.bodyPart ? currentWorkout.bodyPart : 'N/A';
+                const equipment = currentWorkout && currentWorkout.equipment ? currentWorkout.equipment : 'N/A';
+                
+                listItem.innerHTML = `
+                    <span class="font-semibold text-accent-light break-words">${nameEl.textContent}${weightInfo}</span>
+                    <span class="text-center text-gray-300 capitalize">${bodyPart}</span>
+                    <span class="text-center text-gray-300">${equipment}</span>
+                    <span class="text-center font-mono text-gray-300">${durationFormatted}</span>
+                    <span class="text-center text-xs text-gray-400 font-mono break-all">${userDisplay}</span>
+                    <span class="text-xs text-gray-500 text-center">${dateString}</span>
+                `;
+                
+                // Add to the top of the list
+                workoutHistoryList.insertBefore(listItem, workoutHistoryList.firstChild);
+                
+                console.log("Workout saved to history successfully!");
+            } catch (e) {
+                console.error("Error adding document to history: ", e);
+            }
+        }
+
+        const startTimer = () => {
+            if (setTimerInterval) {
+                // Already running
+                return;
+            }
+            
+            startWorkoutSetBtn.disabled = true;
+            stopWorkoutSetBtn.disabled = false;
+            
+            const updateDisplay = () => {
+                timerDisplay.textContent = formatTime(timeLeft);
+            };
+            
+            updateDisplay(); // Initial display
+
+            setTimerInterval = setInterval(() => {
+                timeLeft--;
+                updateDisplay();
+
+                if (timeLeft <= 0) {
+                    stopTimer(false); // Stop fully
+                    timerDisplay.textContent = "TIME'S UP!";
+                    timerDisplay.classList.add('text-danger', 'animate-pulse');
+                    
+                    // SAVE WORKOUT HERE!
+                    saveWorkoutToHistory();
+
+                    setTimeout(() => {
+                        resetTimer(); // Reset to selected duration after time up alert
+                    }, 2000);
+                }
+            }, 1000);
+        };
+
+        // --- Countdown Timer Logic ---
+        const updateCountdown = () => {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+            
+            currentCountdownDays = parseInt(countdownDurationEl.value, 10);
+            
+            // Set target date based on selected days
+            const targetDate = new Date();
+            targetDate.setDate(targetDate.getDate() + currentCountdownDays);
+            const countDownDate = targetDate.getTime();
+
+            const competitionTimerDisplay = document.getElementById('timer-display');
+            const blocks = [
+                { id: 'days', label: 'Days' }, { id: 'hours', label: 'Hours' }, 
+                { id: 'minutes', label: 'Minutes' }, { id: 'seconds', label: 'Seconds' }
+            ];
+
+            competitionTimerDisplay.innerHTML = blocks.map(block => `
+                <div class="bg-dark-primary p-4 rounded-lg border-b-4 border-accent-red/70">
+                    <div id="${block.id}" class="text-5xl md:text-6xl font-extrabold text-white leading-none mb-1">--</div>
+                    <div class="text-sm uppercase tracking-widest text-gray-400">${block.label}</div>
+                </div>
+            `).join('');
+
+            countdownInterval = setInterval(function() {
+                const now = new Date().getTime();
+                const distance = countDownDate - now;
+                
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                document.getElementById("days").innerHTML = days.toString().padStart(2, '0');
+                document.getElementById("hours").innerHTML = hours.toString().padStart(2, '0');
+                document.getElementById("minutes").innerHTML = minutes.toString().padStart(2, '0');
+                document.getElementById("seconds").innerHTML = seconds.toString().padStart(2, '0');
+
+                if (distance < 0) {
+                    clearInterval(countdownInterval);
+                    competitionTimerDisplay.innerHTML = '<div class="sm:col-span-4 text-center text-4xl font-black text-red-500">COMPETITION LIVE!</div>';
+                }
+            }, 1000);
+        };
+
+        // --- Nutrition Logic ---
+        const calculateCalories = () => {
+            const weight = parseFloat(document.getElementById('weight').value);
+            const height = parseFloat(document.getElementById('height').value);
+            const age = parseInt(document.getElementById('age').value);
+            const gender = document.getElementById('gender').value;
+            const activityLevel = parseFloat(document.getElementById('activity-level').value);
+            
+            if (!weight || !height || !age) {
+                dietMessage.textContent = "Please fill in all required fields";
+                dietMessage.classList.add('text-danger');
+                return;
+            }
+            
+            // Calculate BMI
+            const heightInMeters = height / 100;
+            const bmi = weight / (heightInMeters * heightInMeters);
+            const roundedBmi = Math.round(bmi * 10) / 10;
+            
+            // Determine BMI category
+            let bmiCategoryText, bmiColor;
+            if (bmi < 18.5) {
+                bmiCategoryText = "Underweight";
+                bmiColor = "text-blue-400";
+                userGoal = 'bulk';
+            } else if (bmi < 25) {
+                bmiCategoryText = "Normal weight";
+                bmiColor = "text-green-400";
+                userGoal = 'maintain';
+            } else if (bmi < 30) {
+                bmiCategoryText = "Overweight";
+                bmiColor = "text-yellow-400";
+                userGoal = 'cut';
+            } else {
+                bmiCategoryText = "Obese";
+                bmiColor = "text-red-400";
+                userGoal = 'cut';
+            }
+            
+            // Calculate ideal weight range (BMI 18.5 to 24.9)
+            const minIdealWeight = 18.5 * (heightInMeters * heightInMeters);
+            const maxIdealWeight = 24.9 * (heightInMeters * heightInMeters);
+            
+            // Calculate BMR using Mifflin-St Jeor Equation
+            let bmr;
+            if (gender === 'male') {
+                bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+            } else {
+                bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+            }
+            
+            // Calculate TDEE (Total Daily Energy Expenditure)
+            let tdee = bmr * activityLevel;
+            
+            // Adjust based on BMI and goal
+            let calorieTarget;
+            let recommendationMessage;
+            let dietType;
+            
+            if (userGoal === 'cut') {
+                calorieTarget = tdee - 500; // 500 calorie deficit for weight loss
+                recommendationMessage = `Based on your BMI of ${roundedBmi} (${bmiCategoryText}), we recommend a cutting diet. Aim to lose 0.5-1kg per week.`;
+                dietType = "CUTTING DIET";
+            } else if (userGoal === 'bulk') {
+                calorieTarget = tdee + 500; // 500 calorie surplus for weight gain
+                recommendationMessage = `Based on your BMI of ${roundedBmi} (${bmiCategoryText}), we recommend a bulking diet. Aim to gain 0.25-0.5kg per week.`;
+                dietType = "BULKING DIET";
+            } else {
+                calorieTarget = tdee; // Maintenance
+                recommendationMessage = `Based on your BMI of ${roundedBmi} (${bmiCategoryText}), we recommend a maintenance diet to keep your current weight.`;
+                dietType = "MAINTENANCE DIET";
+            }
+            
+            // Calculate macronutrient breakdown
+            const proteinGrams = Math.round((weight * 2.2) * 1.2); // 1.2g per kg of body weight
+            const proteinCalories = proteinGrams * 4;
+            
+            const fatGrams = Math.round((calorieTarget * 0.25) / 9); // 25% of calories from fat
+            const fatCalories = fatGrams * 9;
+            
+            const remainingCalories = calorieTarget - proteinCalories - fatCalories;
+            const carbsGrams = Math.round(remainingCalories / 4);
+            
+            // Update UI with BMI results
+            bmiValue.textContent = roundedBmi;
+            bmiCategory.textContent = bmiCategoryText;
+            bmiCategory.className = `text-sm mt-1 ${bmiColor}`;
+            
+            // Position BMI marker on the scale (BMI range: 15 to 40)
+            const bmiPosition = ((bmi - 15) / (40 - 15)) * 100;
+            bmiMarker.style.left = `${Math.min(Math.max(bmiPosition, 0), 100)}%`;
+            
+            // Update ideal weight
+            idealWeightRange.textContent = `${Math.round(minIdealWeight)}kg - ${Math.round(maxIdealWeight)}kg`;
+            
+            // --- NEW: Height Analysis ---
+            let heightMessage = '';
+            let showHeightExercises = false;
+            
+            // Determine if height is appropriate for age and weight
+            if (gender === 'male') {
+                if (age < 25 && height < 170) {
+                    heightMessage = `According to your weight (${weight}kg) and age (${age}), your height (${height}cm) is too low. Consider height-boosting exercises.`;
+                    showHeightExercises = true;
+                } else if (age >= 25 && height < 170) {
+                    heightMessage = `Your height (${height}cm) is below average for your weight (${weight}kg) and age (${age}). While height is largely determined by genetics, good posture can make you appear taller.`;
+                    showHeightExercises = true;
+                } else {
+                    heightMessage = `In your case, your height (${height}cm) is the best for your weight (${weight}kg) and age (${age}). Maintain good posture to maximize your appearance.`;
+                }
+            } else { // female
+                if (age < 25 && height < 160) {
+                    heightMessage = `According to your weight (${weight}kg) and age (${age}), your height (${height}cm) is too low. Consider height-boosting exercises.`;
+                    showHeightExercises = true;
+                } else if (age >= 25 && height < 160) {
+                    heightMessage = `Your height (${height}cm) is below average for your weight (${weight}kg) and age (${age}). While height is largely determined by genetics, good posture can make you appear taller.`;
+                    showHeightExercises = true;
+                } else {
+                    heightMessage = `In your case, your height (${height}cm) is the best for your weight (${weight}kg) and age (${age}). Maintain good posture to maximize your appearance.`;
+                }
+            }
+            
+            heightFeedback.textContent = heightMessage;
+            heightAnalysis.classList.remove('hidden');
+            
+            if (showHeightExercises) {
+                heightExercises.classList.remove('hidden');
+            } else {
+                heightExercises.classList.add('hidden');
+            }
+            
+            // --- NEW: Activity Level Recommendation ---
+            let activityMessage = '';
+            let activityRecommend = '';
+            
+            if (age < 30) {
+                if (activityLevel < 1.2) {
+                    activityRecommend = 'moderately active';
+                    activityMessage = `⚠️ You need to be moderately active (moderate exercise 3-5 days/week) based on your age (${age}).`;
+                } else if (activityLevel >= 1.2 && activityLevel < 1.375) {
+                    activityRecommend = 'lightly to moderately active';
+                    activityMessage = `⚠️ You need to be lightly to moderately active based on your age (${age}).`;
+                } else if (activityLevel >= 1.375 && activityLevel < 1.55) {
+                    activityRecommend = 'moderately active';
+                    activityMessage = `⚠️ You need to be moderately active based on your age (${age}).`;
+                } else {
+                    activityMessage = `✅ Great! Your activity level is appropriate for your age (${age}).`;
+                }
+            } else if (age < 50) {
+                if (activityLevel < 1.375) {
+                    activityRecommend = 'lightly active';
+                    activityMessage = `⚠️ You need to be lightly active (light exercise 1-3 days/week) based on your age (${age}).`;
+                } else {
+                    activityMessage = `✅ Great! Your activity level is appropriate for your age (${age}).`;
+                }
+            } else {
+                if (activityLevel < 1.2) {
+                    activityRecommend = 'somewhat active';
+                    activityMessage = `⚠️ You need to maintain some activity based on your age (${age}) for better mobility and health.`;
+                } else {
+                    activityMessage = `✅ Great! Your activity level is appropriate for your age (${age}).`;
+                }
+            }
+            
+            activityFeedback.textContent = activityMessage;
+            activityRecommendation.classList.remove('hidden');
+            
+            // Update recommendation
+            recommendationText.textContent = recommendationMessage;
+            
+            // Update calorie results
+            calorieValue.textContent = Math.round(calorieTarget);
+            proteinValue.textContent = `${proteinGrams}g`;
+            carbsValue.textContent = `${carbsGrams}g`;
+            fatValue.textContent = `${fatGrams}g`;
+            
+            // Store diet type for generating diet plan
+            document.getElementById('generate-diet-btn').dataset.dietType = dietType;
+            
+            // Show all result sections
+            bmiResult.classList.remove('hidden');
+            idealWeight.classList.remove('hidden');
+            recommendation.classList.remove('hidden');
+            calorieResult.classList.remove('hidden');
+            generateDietBtn.disabled = false;
+            
+            dietMessage.textContent = "Health analysis completed successfully!";
+            dietMessage.classList.remove('text-danger');
+            dietMessage.classList.add('text-accent-green');
+            
+            // Update diet motivation
+            const randomIndex = Math.floor(Math.random() * nutritionQuotes.length);
+            dietMotivationCard.innerHTML = `
+                <div class="flex flex-col">
+                    <p class="text-xl font-bold text-accent-green">"${nutritionQuotes[randomIndex]}"</p>
+                    <span class="block mt-4 text-sm font-normal text-gray-400 border-t border-gray-700 pt-4">
+                        Your BMI: ${roundedBmi} (${bmiCategoryText}) | Recommended: ${dietType}
+                    </span>
+                </div>
+            `;
+        };
+
+        const generateDietPlan = () => {
+            const calories = parseInt(calorieValue.textContent);
+            const dietType = document.getElementById('generate-diet-btn').dataset.dietType;
+            
+            dietMessage.textContent = "Generating your personalized diet plan...";
+            dietMessage.classList.add('text-accent-green');
+            
+            // Simulate API delay
+            setTimeout(() => {
+                // Mock AI diet responses based on goal
+                const dietPlans = {
+                    "CUTTING DIET": `CUTTING DIET PLAN (${calories} calories)
+
+BREAKFAST (approx. 400 calories):
+- 2 scrambled eggs with spinach and mushrooms
+- 1 slice whole grain toast
+- 1/2 avocado
+- Black coffee or green tea
+
+LUNCH (approx. 500 calories):
+- Grilled chicken breast (150g)
+- Large mixed green salad with vegetables
+- 2 tbsp light vinaigrette dressing
+- 1/2 cup quinoa
+
+DINNER (approx. 450 calories):
+- Baked salmon (150g)
+- Steamed broccoli and asparagus
+- 1 small sweet potato
+
+SNACKS (approx. 150 calories):
+- Greek yogurt (100g)
+- Handful of almonds (10-12)
+- Apple
+
+HYDRATION:
+- Drink 3-4 liters of water daily
+- Herbal teas allowed
+
+NOTES:
+- Limit processed foods and sugars
+- Focus on lean proteins and fibrous vegetables
+- Eat slowly and mindfully
+- Consider intermittent fasting (16:8) if appropriate`,
+                    
+                    "MAINTENANCE DIET": `MAINTENANCE DIET PLAN (${calories} calories)
+
+BREAKFAST (approx. 500 calories):
+- 3-egg omelette with cheese and vegetables
+- 2 slices whole grain toast with butter
+- 1 serving of fruit (banana or berries)
+- Coffee with milk
+
+LUNCH (approx. 600 calories):
+- Chicken or tuna salad wrap
+- Side of roasted vegetables
+- 1 cup brown rice or quinoa
+- 1 serving of fruit
+
+DINNER (approx. 550 calories):
+- Lean protein of choice (beef, chicken, fish) - 200g
+- 2 servings of vegetables
+- 1 medium potato or 1 cup whole grain pasta
+
+SNACKS (approx. 350 calories):
+- Protein shake
+- Greek yogurt with honey
+- Mixed nuts and dried fruit
+- Rice cakes with peanut butter
+
+HYDRATION:
+- Drink 2-3 liters of water daily
+- Limit sugary drinks
+
+NOTES:
+- Balanced macronutrient intake
+- Include variety for nutritional completeness
+- Listen to hunger and fullness cues
+- Regular exercise to maintain muscle mass`,
+                    
+                    "BULKING DIET": `BULKING DIET PLAN (${calories} calories)
+
+BREAKFAST (approx. 600 calories):
+- 4-egg scramble with cheese
+- 2 slices whole grain toast with avocado
+- 1 cup oatmeal with berries and honey
+- Glass of milk or protein shake
+
+LUNCH (approx. 700 calories):
+- Large chicken breast (200g)
+- 1.5 cups brown rice or quinoa
+- Steamed vegetables with olive oil
+- Side salad
+
+DINNER (approx. 650 calories):
+- Salmon or lean steak (200g)
+- 1 large sweet potato
+- 2 servings of green vegetables
+- Whole grain roll
+
+SNACKS (approx. 450 calories):
+- Protein shake with banana
+- Greek yogurt with granola
+- Peanut butter sandwich
+- Handful of mixed nuts and dried fruit
+
+POST-WORKOUT:
+- Protein shake within 30 minutes of training
+- Complex carbs to replenish glycogen
+
+HYDRATION:
+- Drink 3-4 liters of water daily
+- Electrolytes during intense training
+
+NOTES:
+- Eat every 3-4 hours
+- Focus on protein timing around workouts
+- Don't fear healthy fats and complex carbs
+- Ensure progressive overload in training`
+                };
+                
+                dietPlanContent.textContent = dietPlans[dietType];
+                dietPlanContainer.classList.remove('hidden');
+                
+                dietMessage.textContent = "Diet plan generated successfully!";
+                
+                // Scroll to diet plan
+                document.getElementById('nutrition').scrollIntoView({ behavior: 'smooth' });
+            }, 2000);
+        };
+
+        // --- WOD Logic - Expanded workout database with more exercises for each equipment ---
+        const physicalWorkouts = [
+            // BODYWEIGHT EXERCISES (None)
+            { name: "Bodyweight Squats (Quick Rep)", bodyPart: "Legs", equipment: "None", details: "Perform 3 sets of 20 reps. Focus on depth and form. Keep your chest up and weight on your heels. (Rest 60 seconds per set)" },
+            { name: "Pushups (Quick Rep)", bodyPart: "Upper Body", equipment: "None", details: "Perform 3 sets to failure. Maintain a straight line from head to heels. Modify on knees if needed. (Rest 60 seconds per set)" },
+            { name: "Mountain Climbers (Quick Rep)", bodyPart: "Arms", equipment: "None", details: "Perform 3 sets for 45 seconds each. Drive your knees rapidly towards your chest (engaging arms/shoulders). (Rest 60 seconds per set)" },
+            { name: "Burpees (Quick Rep)", bodyPart: "Full Body", equipment: "None", details: "Perform 3 sets of 10 reps. Jump down, pushup, jump up with arms overhead. (Rest 90 seconds per set)" },
+            { name: "Jump Squats (Quick Rep)", bodyPart: "Legs", equipment: "None", details: "Perform 3 sets of 15 reps. Explosive jump from squat position, land softly. (Rest 60 seconds per set)" },
+            { name: "Pike Pushups (Quick Rep)", bodyPart: "Upper Body", equipment: "None", details: "Perform 3 sets of 8-12 reps. Targets shoulders, keep hips high in pike position. (Rest 60 seconds per set)" },
+            { name: "Single Leg Glute Bridges (Quick Rep)", bodyPart: "Legs", equipment: "None", details: "Perform 3 sets of 12 reps per leg. Squeeze glutes at the top, keep hips level. (Rest 45 seconds per set)" },
+            { name: "Diamond Pushups (Quick Rep)", bodyPart: "Arms", equipment: "None", details: "Perform 3 sets of 8-12 reps. Hands form diamond shape, targets triceps. (Rest 60 seconds per set)" },
+            { name: "Wall Sits (Quick Rep)", bodyPart: "Legs", equipment: "None", details: "Perform 3 sets of 45 seconds each. Back against wall, thighs parallel to ground. (Rest 60 seconds per set)" },
+            { name: "High Knees (Quick Rep)", bodyPart: "Full Body", equipment: "None", details: "Perform 3 sets of 30 seconds each. Drive knees up to chest level rapidly. (Rest 45 seconds per set)" },
+            { name: "V-Ups (Quick Rep)", bodyPart: "Abs", equipment: "None", details: "Perform 3 sets of 15 reps. Simultaneously lift torso and legs to form V shape. Control the descent. (Rest 45 seconds per set)" },
+            { name: "Hindu Pushups (Quick Rep)", bodyPart: "Full Body", equipment: "None", details: "Perform 3 sets of 10 reps. Downward dog to low pushup motion, great for mobility and strength. (Rest 60 seconds per set)" },
+            { name: "Single-Leg Deadlifts (Quick Rep)", bodyPart: "Legs", equipment: "None", details: "Perform 3 sets of 10 reps per leg. Hinge at hip, reach opposite hand toward ground. Balance challenge. (Rest 60 seconds per set)" },
+            { name: "Spider Man Pushups (Quick Rep)", bodyPart: "Full Body", equipment: "None", details: "Perform 3 sets of 8 reps per side. Bring knee to elbow during pushup, alternate sides. Core engagement. (Rest 60 seconds per set)" },
+            { name: "Pistol Squats (Quick Rep)", bodyPart: "Legs", equipment: "None", details: "Perform 3 sets of 5 reps per leg. Single leg squat, most challenging bodyweight leg exercise. (Rest 90 seconds per set)" },
+            { name: "Archer Pushups (Quick Rep)", bodyPart: "Upper Body", equipment: "None", details: "Perform 3 sets of 6 reps per side. Shift weight to one side during pushup, advanced variation. (Rest 90 seconds per set)" },
+            { name: "Bear Crawls (Quick Rep)", bodyPart: "Full Body", equipment: "None", details: "Perform 3 sets of 20 meters. Quadruped movement, excellent for core and coordination. (Rest 60 seconds per set)" },
+            { name: "Commando Planks (Quick Rep)", bodyPart: "Abs", equipment: "None", details: "Perform 3 sets of 10 reps per side. Alternate from plank to forearm plank, core stability. (Rest 45 seconds per set)" },
+            { name: "Shrimp Squats (Quick Rep)", bodyPart: "Legs", equipment: "None", details: "Perform 3 sets of 5 reps per leg. Advanced single leg squat variation holding back foot. (Rest 90 seconds per set)" },
+            { name: "Dragon Walks (Quick Rep)", bodyPart: "Full Body", equipment: "None", details: "Perform 3 sets of 10 reps per side. Pushup position, bring foot to hand, crawl forward. (Rest 90 seconds per set)" },
+            { name: "Tuck Jumps (Quick Rep)", bodyPart: "Legs", equipment: "None", details: "Perform 3 sets of 12 reps. Explosive jump bringing knees to chest. Land softly and repeat. (Rest 60 seconds per set)" },
+            { name: "Handstand Pushups (Quick Rep)", bodyPart: "Upper Body", equipment: "None", details: "Perform 3 sets to failure. Against wall, lower head to ground and press up. Advanced. (Rest 90 seconds per set)" },
+            { name: "Flutter Kicks (Quick Rep)", bodyPart: "Abs", equipment: "None", details: "Perform 3 sets of 30 seconds each. Lie down, alternate kicking legs. Low to ground for core. (Rest 45 seconds per set)" },
+            { name: "Side Lunges (Quick Rep)", bodyPart: "Legs", equipment: "None", details: "Perform 3 sets of 10 reps per side. Step laterally, keep opposite leg straight. Hip mobility. (Rest 60 seconds per set)" },
+            { name: "Reverse Planks (Quick Rep)", bodyPart: "Back", equipment: "None", details: "Perform 3 sets of 30 seconds. Sit, lift hips to straight body. Strengthens posterior chain. (Rest 60 seconds per set)" },
+
+            // DUMBBELL EXERCISES
+            { name: "Dumbbell Lunges (Quick Rep)", bodyPart: "Legs", equipment: "Dumbbells", details: "Perform 3 sets of 10-12 reps per leg. Keep your chest up and core tight. Step back into reverse lunge. (Rest 60 seconds per set)" },
+            { name: "Dumbbell Shoulder Press (Quick Rep)", bodyPart: "Upper Body", equipment: "Dumbbells", details: "Perform 3 sets of 10 reps. Press straight overhead, controlling the weight down. Keep core engaged. (Rest 60 seconds per set)" },
+            { name: "Dumbbell Bench Press (Quick Rep)", bodyPart: "Upper Body", equipment: "Dumbbells", details: "Perform 4 sets of 8 reps. Control the descent and drive up powerfully. Keep shoulder blades retracted. (Rest 60 seconds per set)" },
+            { name: "Dumbbell Curls (Quick Rep)", bodyPart: "Arms", equipment: "Dumbbells", details: "Perform 3 sets of 12 reps per arm. Focus on the squeeze at the top. Don't swing the weight. (Rest 60 seconds per set)" },
+            { name: "Dumbbell Romanian Deadlifts (Quick Rep)", bodyPart: "Legs", equipment: "Dumbbells", details: "Perform 3 sets of 10 reps. Hip hinge movement, feel stretch in hamstrings. (Rest 60 seconds per set)" },
+            { name: "Dumbbell Thrusters (Quick Rep)", bodyPart: "Full Body", equipment: "Dumbbells", details: "Perform 3 sets of 8 reps. Squat to overhead press in one fluid motion. (Rest 90 seconds per set)" },
+            { name: "Dumbbell Renegade Rows (Quick Rep)", bodyPart: "Back", equipment: "Dumbbells", details: "Perform 3 sets of 6 reps per side. Plank position, row one dumbbell at a time. (Rest 60 seconds per set)" },
+            { name: "Dumbbell Step-ups (Quick Rep)", bodyPart: "Legs", equipment: "Dumbbells", details: "Perform 3 sets of 10 reps per leg. Step up onto bench, drive through heel. (Rest 60 seconds per set)" },
+            { name: "Dumbbell Tricep Extensions (Quick Rep)", bodyPart: "Arms", equipment: "Dumbbells", details: "Perform 3 sets of 12 reps. Overhead extension, keep elbows stationary. (Rest 60 seconds per set)" },
+            { name: "Dumbbell Chest Flyes (Quick Rep)", bodyPart: "Upper Body", equipment: "Dumbbells", details: "Perform 3 sets of 10 reps. Wide arc motion, feel stretch in chest. (Rest 60 seconds per set)" },
+            { name: "Dumbbell Bulgarian Split Squats (Quick Rep)", bodyPart: "Legs", equipment: "Dumbbells", details: "Perform 3 sets of 8 reps per leg. Rear foot elevated, focus on front leg. (Rest 60 seconds per set)" },
+            { name: "Dumbbell Hammer Curls (Quick Rep)", bodyPart: "Arms", equipment: "Dumbbells", details: "Perform 3 sets of 12 reps. Neutral grip, targets brachialis muscle. (Rest 60 seconds per set)" },
+            { name: "Dumbbell Arnold Press (Quick Rep)", bodyPart: "Upper Body", equipment: "Dumbbells", details: "Perform 3 sets of 10 reps. Rotate from curl to press overhead. Targets all deltoid heads. (Rest 60 seconds per set)" },
+            { name: "Dumbbell Lateral Raises (Quick Rep)", bodyPart: "Upper Body", equipment: "Dumbbells", details: "Perform 3 sets of 15 reps. Raise arms to shoulder height, slight bend in elbows. Control descent. (Rest 60 seconds per set)" },
+            { name: "Dumbbell Skull Crushers (Quick Rep)", bodyPart: "Arms", equipment: "Dumbbells", details: "Perform 3 sets of 12 reps. Lower dumbbells to forehead, extend elbows. Keep shoulders stable. (Rest 60 seconds per set)" },
+            { name: "Dumbbell Bent-Over Rows (Quick Rep)", bodyPart: "Back", equipment: "Dumbbells", details: "Perform 3 sets of 12 reps. Bend over 45 degrees, row to hips. Squeeze shoulder blades. (Rest 60 seconds per set)" },
+            { name: "Dumbbell Front Raises (Quick Rep)", bodyPart: "Upper Body", equipment: "Dumbbells", details: "Perform 3 sets of 12 reps. Raise straight ahead to shoulder height. Don't swing. (Rest 45 seconds per set)" },
+            { name: "Dumbbell Goblet Squats (Quick Rep)", bodyPart: "Legs", equipment: "Dumbbells", details: "Perform 3 sets of 15 reps. Hold at chest, squat deep. Keep torso upright. (Rest 60 seconds per set)" },
+            { name: "Dumbbell Pullovers (Quick Rep)", bodyPart: "Upper Body", equipment: "Dumbbells", details: "Perform 3 sets of 12 reps. Over chest, lower behind head. Targets serratus and lats. (Rest 60 seconds per set)" },
+            { name: "Dumbbell Upright Rows (Quick Rep)", bodyPart: "Upper Body", equipment: "Dumbbells", details: "Perform 3 sets of 12 reps. Pull to chin level, elbows high. Traps focus. (Rest 60 seconds per set)" },
+            { name: "Dumbbell Shrugs (Quick Rep)", bodyPart: "Back", equipment: "Dumbbells", details: "Perform 3 sets of 20 reps. Lift shoulders straight up, squeeze traps at top. Hold briefly. (Rest 45 seconds per set)" },
+            { name: "Dumbbell Incline Flyes (Quick Rep)", bodyPart: "Upper Body", equipment: "Dumbbells", details: "Perform 3 sets of 12 reps. On incline bench, wide arc motion. Upper chest focus. (Rest 60 seconds per set)" },
+            { name: "Dumbbell Concentration Curls (Quick Rep)", bodyPart: "Arms", equipment: "Dumbbells", details: "Perform 3 sets of 10 reps per arm. Seated, isolated bicep curl. Peak contraction. (Rest 60 seconds per set)" },
+            { name: "Dumbbell Tricep Kickbacks (Quick Rep)", bodyPart: "Arms", equipment: "Dumbbells", details: "Perform 3 sets of 15 reps per arm. Bent over, extend arm back. Hold at peak. (Rest 60 seconds per set)" },
+            { name: "Dumbbell Calf Raises (Quick Rep)", bodyPart: "Legs", equipment: "Dumbbells", details: "Perform 4 sets of 20 reps. Stand and raise heels, full range of motion. Pause at top. (Rest 45 seconds per set)" },
+            { name: "Dumbbell Woodchoppers (Quick Rep)", bodyPart: "Abs", equipment: "Dumbbells", details: "Perform 3 sets of 15 reps per side. Rotate with weight, core engaged. Oblique focus. (Rest 60 seconds per set)" },
+            { name: "Dumbbell Windmills (Quick Rep)", bodyPart: "Abs", equipment: "Dumbbells", details: "Perform 3 sets of 8 reps per side. Overhead hold, bend laterally. Mobility and stability. (Rest 60 seconds per set)" },
+            { name: "Dumbbell Carries (Quick Rep)", bodyPart: "Full Body", equipment: "Dumbbells", details: "Perform 3 sets of 50 meters. Heavy weights by sides, walk. Grip and core. (Rest 90 seconds per set)" },
+
+            // BARBELL EXERCISES
+            { name: "Barbell Deadlift (Quick Rep)", bodyPart: "Back", equipment: "Barbell", details: "Perform 3 sets of 8 reps. Keep a flat back and drive through your heels. Hip hinge movement. (Rest 90 seconds per set)" },
+            { name: "Incline Bench Press (Quick Rep)", bodyPart: "Upper Body", equipment: "Barbell", details: "Perform 4 sets of 8-10 reps. Targets upper chest development. 30-45 degree incline. (Rest 90 seconds per set)" },
+            { name: "Overhead Press (Quick Rep)", bodyPart: "Upper Body", equipment: "Barbell", details: "Perform 4 sets of 8 reps. Press overhead while keeping core tight. Start from shoulder level. (Rest 90 seconds per set)" },
+            { name: "Barbell Squats (Quick Rep)", bodyPart: "Legs", equipment: "Barbell", details: "Perform 4 sets of 8-10 reps. Go deep but maintain form. Keep chest up, knees track over toes. (Rest 90 seconds per set)" },
+            { name: "Barbell Rows (Quick Rep)", bodyPart: "Back", equipment: "Barbell", details: "Perform 3 sets of 10 reps. Pull bar to lower chest, squeeze shoulder blades. (Rest 60 seconds per set)" },
+            { name: "Barbell Hip Thrusts (Quick Rep)", bodyPart: "Legs", equipment: "Barbell", details: "Perform 3 sets of 12 reps. Shoulders on bench, drive hips up. Squeeze glutes at top. (Rest 60 seconds per set)" },
+            { name: "Barbell Lunges (Quick Rep)", bodyPart: "Legs", equipment: "Barbell", details: "Perform 3 sets of 8 reps per leg. Bar on back, step forward into lunge. (Rest 60 seconds per set)" },
+            { name: "Barbell Curls (Quick Rep)", bodyPart: "Arms", equipment: "Barbell", details: "Perform 3 sets of 10 reps. Keep elbows at sides, curl bar to chest. (Rest 60 seconds per set)" },
+            { name: "Barbell Close-Grip Bench Press (Quick Rep)", bodyPart: "Arms", equipment: "Barbell", details: "Perform 3 sets of 10 reps. Hands closer than shoulder width, targets triceps. (Rest 60 seconds per set)" },
+            { name: "Barbell Front Squats (Quick Rep)", bodyPart: "Legs", equipment: "Barbell", details: "Perform 3 sets of 8 reps. Bar rests on front delts, more quad emphasis. (Rest 90 seconds per set)" },
+            { name: "Barbell Shrugs (Quick Rep)", bodyPart: "Back", equipment: "Barbell", details: "Perform 4 sets of 15 reps. Lift shoulders straight up, squeeze traps. Hold at top. (Rest 45 seconds per set)" },
+            { name: "Barbell Good Mornings (Quick Rep)", bodyPart: "Back", equipment: "Barbell", details: "Perform 3 sets of 12 reps. Bar on back, hinge at hips. Hamstring focus. (Rest 60 seconds per set)" },
+            { name: "Barbell Upright Rows (Quick Rep)", bodyPart: "Upper Body", equipment: "Barbell", details: "Perform 3 sets of 12 reps. Pull to chin, elbows high. Trap development. (Rest 60 seconds per set)" },
+            { name: "Barbell Calf Raises (Quick Rep)", bodyPart: "Legs", equipment: "Barbell", details: "Perform 4 sets of 20 reps. Raise heels on toes, full ROM. Pause at peak. (Rest 45 seconds per set)" },
+            { name: "Barbell Decline Bench Press (Quick Rep)", bodyPart: "Upper Body", equipment: "Barbell", details: "Perform 3 sets of 10 reps. Lower chest emphasis. Secure feet. (Rest 90 seconds per set)" },
+            { name: "Barbell Pause Squats (Quick Rep)", bodyPart: "Legs", equipment: "Barbell", details: "Perform 3 sets of 8 reps. Pause 2 seconds at bottom position. Strength focus. (Rest 120 seconds per set)" },
+            { name: "Barbell Row with Underhand Grip (Quick Rep)", bodyPart: "Back", equipment: "Barbell", details: "Perform 3 sets of 10 reps. Underhand grip, bicep engagement. Keep back straight. (Rest 60 seconds per set)" },
+            { name: "Barbell Floor Press (Quick Rep)", bodyPart: "Upper Body", equipment: "Barbell", details: "Perform 3 sets of 10 reps. Limited range, tricep emphasis. Powerlifting style. (Rest 90 seconds per set)" },
+            { name: "Barbell Box Squats (Quick Rep)", bodyPart: "Legs", equipment: "Barbell", details: "Perform 3 sets of 8 reps. Sit back on box, pause briefly. Sit and stand. (Rest 90 seconds per set)" },
+            { name: "Barbell Sumo Deadlift (Quick Rep)", bodyPart: "Legs", equipment: "Barbell", details: "Perform 3 sets of 8 reps. Wide stance, toes out. Quad emphasis. (Rest 90 seconds per set)" },
+            { name: "Barbell Romanian Deadlift (Quick Rep)", bodyPart: "Back", equipment: "Barbell", details: "Perform 3 sets of 10 reps. Minimal knee bend, hip hinge. Hamstring focus. (Rest 90 seconds per set)" },
+            { name: "Barbell Reverse Curls (Quick Rep)", bodyPart: "Arms", equipment: "Barbell", details: "Perform 3 sets of 12 reps. Overhand grip, targets forearms. Control eccentric. (Rest 60 seconds per set)" },
+            { name: "Barbell Overhead Squats (Quick Rep)", bodyPart: "Full Body", equipment: "Barbell", details: "Perform 3 sets of 6 reps. Overhead press bar, squat. Advanced mobility. (Rest 120 seconds per set)" },
+            { name: "Barbell Zercher Squats (Quick Rep)", bodyPart: "Legs", equipment: "Barbell", details: "Perform 3 sets of 8 reps. Hold in elbow crease, squat. Unique angle. (Rest 90 seconds per set)" },
+            { name: "Barbell Landmine Press (Quick Rep)", bodyPart: "Upper Body", equipment: "Barbell", details: "Perform 3 sets of 12 reps per side. One end anchored, press at angle. Core stability. (Rest 60 seconds per set)" },
+
+            // MACHINE EXERCISES
+            { name: "Leg Press (Quick Rep)", bodyPart: "Legs", equipment: "Machine", details: "Perform 4 sets of 10-12 reps. Focus on controlled movement and full range of motion. Feet shoulder-width apart. (Rest 90 seconds per set)" },
+            { name: "Lat Pulldowns (Quick Rep)", bodyPart: "Back", equipment: "Machine", details: "Perform 3 sets of 10 reps. Pull the bar to your chest while keeping your back straight. Lean back slightly. (Rest 60 seconds per set)" },
+            { name: "Cable Rows (Quick Rep)", bodyPart: "Back", equipment: "Machine", details: "Perform 3 sets of 12 reps. Squeeze your shoulder blades together at the peak. Keep chest up. (Rest 60 seconds per set)" },
+            { name: "Leg Extensions (Quick Rep)", bodyPart: "Legs", equipment: "Machine", details: "Perform 3 sets of 15 reps. Isolate quadriceps with controlled movements. Pause at top. (Rest 60 seconds per set)" },
+            { name: "Hamstring Curls (Quick Rep)", bodyPart: "Legs", equipment: "Machine", details: "Perform 3 sets of 12 reps. Focus on squeezing hamstrings at the top. Control the negative. (Rest 60 seconds per set)" },
+            { name: "Cable Bicep Curls (Quick Rep)", bodyPart: "Arms", equipment: "Machine", details: "Perform 3 sets of 12 reps per arm. Constant tension throughout the movement. Keep elbows stationary. (Rest 60 seconds per set)" },
+            { name: "Tricep Pushdowns (Quick Rep)", bodyPart: "Arms", equipment: "Machine", details: "Perform 3 sets of 15 reps. Keep elbows tucked in and extend fully. Use rope or straight bar. (Rest 60 seconds per set)" },
+            { name: "Cable Crunches (Quick Rep)", bodyPart: "Abs", equipment: "Machine", details: "Perform 3 sets of 15 reps. Curl downward while keeping hips stationary. Focus on abs contraction. (Rest 60 seconds per set)" },
+            { name: "Face Pulls (Quick Rep)", bodyPart: "Upper Body", equipment: "Machine", details: "Perform 3 sets of 15 reps. Great for shoulder health and posture. Pull to face level. (Rest 60 seconds per set)" },
+            { name: "Calf Raises (Quick Rep)", bodyPart: "Legs", equipment: "Machine", details: "Perform 4 sets of 20 reps. Full range of motion at the ankle. Pause at top and bottom. (Rest 45 seconds per set)" },
+            { name: "Chest Press Machine (Quick Rep)", bodyPart: "Upper Body", equipment: "Machine", details: "Perform 3 sets of 10 reps. Controlled movement, don't lock elbows completely. (Rest 60 seconds per set)" },
+            { name: "Shoulder Press Machine (Quick Rep)", bodyPart: "Upper Body", equipment: "Machine", details: "Perform 3 sets of 10 reps. Press overhead with controlled motion. Adjust seat height properly. (Rest 60 seconds per set)" },
+            { name: "Cable Lateral Raises (Quick Rep)", bodyPart: "Upper Body", equipment: "Machine", details: "Perform 3 sets of 12 reps. Raise arms to shoulder height, control the descent. (Rest 60 seconds per set)" },
+            { name: "Cable Chest Flyes (Quick Rep)", bodyPart: "Upper Body", equipment: "Machine", details: "Perform 3 sets of 12 reps. Wide arc motion, squeeze chest at center. (Rest 60 seconds per set)" },
+            { name: "Cable Crossovers (Quick Rep)", bodyPart: "Upper Body", equipment: "Machine", details: "Perform 3 sets of 15 reps. Cross cables at center, squeeze chest. Peak contraction. (Rest 60 seconds per set)" },
+            { name: "Cable Hammer Curls (Quick Rep)", bodyPart: "Arms", equipment: "Machine", details: "Perform 3 sets of 12 reps. Neutral grip with rope, constant tension. Brachialis focus. (Rest 60 seconds per set)" },
+            { name: "Cable Tricep Extensions (Quick Rep)", bodyPart: "Arms", equipment: "Machine", details: "Perform 3 sets of 15 reps. Overhead cable, keep elbows forward. Full ROM. (Rest 60 seconds per set)" },
+            { name: "Cable Pull-Thrus (Quick Rep)", bodyPart: "Legs", equipment: "Machine", details: "Perform 3 sets of 15 reps. Face away, pull cable between legs. Hip hinge motion. (Rest 60 seconds per set)" },
+            { name: "Cable Rear Delt Flyes (Quick Rep)", bodyPart: "Upper Body", equipment: "Machine", details: "Perform 3 sets of 15 reps. Bent over, wide arms. Rear delt isolation. (Rest 60 seconds per set)" },
+            { name: "Smith Machine Incline Press (Quick Rep)", bodyPart: "Upper Body", equipment: "Machine", details: "Perform 3 sets of 10 reps. Guided movement, safer than free weights. Upper chest. (Rest 90 seconds per set)" },
+            { name: "Seated Cable Rows (Quick Rep)", bodyPart: "Back", equipment: "Machine", details: "Perform 3 sets of 12 reps. Pull handle to torso, seated position. Squeeze lats. (Rest 60 seconds per set)" },
+            { name: "Cable Woodchoppers (Quick Rep)", bodyPart: "Abs", equipment: "Machine", details: "Perform 3 sets of 12 reps per side. Diagonal chop motion. Core and obliques. (Rest 60 seconds per set)" },
+            { name: "Adductor Machine (Quick Rep)", bodyPart: "Legs", equipment: "Machine", details: "Perform 3 sets of 20 reps. Squeeze legs together. Inner thigh focus. (Rest 45 seconds per set)" },
+            { name: "Abductor Machine (Quick Rep)", bodyPart: "Legs", equipment: "Machine", details: "Perform 3 sets of 20 reps. Push legs apart against resistance. Outer thigh focus. (Rest 45 seconds per set)" },
+            { name: "Seated Calf Raise Machine (Quick Rep)", bodyPart: "Legs", equipment: "Machine", details: "Perform 4 sets of 20 reps. Seated position, full ROM. Pause at peak. (Rest 45 seconds per set)" },
+            { name: "Reverse Pec Deck (Quick Rep)", bodyPart: "Upper Body", equipment: "Machine", details: "Perform 3 sets of 15 reps. Arms spread wide, rear delts and rhomboids. (Rest 60 seconds per set)" },
+            { name: "Prone Hamstring Curl Machine (Quick Rep)", bodyPart: "Legs", equipment: "Machine", details: "Perform 3 sets of 15 reps. Lying face down, curl heels to glutes. Hamstring isolation. (Rest 60 seconds per set)" },
+            { name: "Cable One-Arm Rows (Quick Rep)", bodyPart: "Back", equipment: "Machine", details: "Perform 3 sets of 12 reps per side. Unilateral rowing. Correct imbalances. (Rest 60 seconds per set)" },
+
+            // MAT EXERCISES
+            { name: "Plank Hold (Quick Rep)", bodyPart: "Abs", equipment: "Mat", details: "Perform 3 sets, holding for 60 seconds each. Keep your hips level and squeeze your glutes. Straight line from head to heels. (Rest 60 seconds per set)" }, 
+            { name: "Crunches (Quick Rep)", bodyPart: "Abs", equipment: "Mat", details: "Perform 3 sets of 20 reps. Focus on contracting your abs, not pulling with your neck. Keep lower back on mat. (Rest 45 seconds per set)" },
+            { name: "Leg Raises (Quick Rep)", bodyPart: "Abs", equipment: "Mat", details: "Perform 3 sets of 15 reps. Keep your lower back pressed into the floor. Control the movement. (Rest 45 seconds per set)" },
+            { name: "Side Planks (Quick Rep)", bodyPart: "Abs", equipment: "Mat", details: "Perform 3 sets of 30 seconds per side. Keep your body in a straight line. Stack feet and shoulders. (Rest 45 seconds per set)" },
+            { name: "Dead Bug (Quick Rep)", bodyPart: "Abs", equipment: "Mat", details: "Perform 3 sets of 10 reps per side. Opposite arm and leg extension, keep core stable. (Rest 45 seconds per set)" },
+            { name: "Bird Dog (Quick Rep)", bodyPart: "Back", equipment: "Mat", details: "Perform 3 sets of 10 reps per side. Opposite arm and leg extension from hands and knees. (Rest 45 seconds per set)" },
+            { name: "Glute Bridges (Quick Rep)", bodyPart: "Legs", equipment: "Mat", details: "Perform 3 sets of 15 reps. Squeeze glutes at top, keep core engaged. (Rest 45 seconds per set)" },
+            { name: "Superman (Quick Rep)", bodyPart: "Back", equipment: "Mat", details: "Perform 3 sets of 12 reps. Lift chest and legs simultaneously, hold for 2 seconds. (Rest 45 seconds per set)" },
+            { name: "Bicycle Crunches (Quick Rep)", bodyPart: "Abs", equipment: "Mat", details: "Perform 3 sets of 20 reps per side. Alternating elbow to knee motion. Core rotation. (Rest 45 seconds per set)" },
+            { name: "Reverse Crunches (Quick Rep)", bodyPart: "Abs", equipment: "Mat", details: "Perform 3 sets of 15 reps. Bring knees to chest, lift hips slightly. Lower abs focus. (Rest 45 seconds per set)" },
+            { name: "Toe Touches (Quick Rep)", bodyPart: "Abs", equipment: "Mat", details: "Perform 3 sets of 15 reps. Lie flat, reach for toes while lifting legs. Upper abs. (Rest 45 seconds per set)" },
+            { name: "Russian Twists on Mat (Quick Rep)", bodyPart: "Abs", equipment: "Mat", details: "Perform 3 sets of 30 reps (15 per side). Lean back, twist side to side. Obliques and core. (Rest 60 seconds per set)" },
+            { name: "Scissor Kicks (Quick Rep)", bodyPart: "Abs", equipment: "Mat", details: "Perform 3 sets of 20 reps. Alternating leg kicks, low to ground. Lower abs. (Rest 45 seconds per set)" },
+            { name: "Hip Thrusts on Floor (Quick Rep)", bodyPart: "Legs", equipment: "Mat", details: "Perform 3 sets of 15 reps. Drive hips up, squeeze glutes at top. Posterior chain. (Rest 45 seconds per set)" },
+            { name: "Mountain Climber Crunches (Quick Rep)", bodyPart: "Full Body", equipment: "Mat", details: "Perform 3 sets of 30 reps (15 per side). Drive knee to opposite elbow. Core and cardio. (Rest 60 seconds per set)" },
+            { name: "Reverse Planks (Quick Rep)", bodyPart: "Back", equipment: "Mat", details: "Perform 3 sets of 30 seconds. Sit, lift hips, straight body. Posterior chain focus. (Rest 60 seconds per set)" },
+            { name: "Starfish Crunches (Quick Rep)", bodyPart: "Abs", equipment: "Mat", details: "Perform 3 sets of 15 reps per side. Reach opposite arm and leg together. Core stability. (Rest 45 seconds per set)" },
+            { name: "Hollow Body Hold (Quick Rep)", bodyPart: "Abs", equipment: "Mat", details: "Perform 3 sets of 30 seconds. Lift shoulders and legs, hold V-shape. Core strength. (Rest 60 seconds per set)" },
+            { name: "Flutter Kicks on Mat (Quick Rep)", bodyPart: "Abs", equipment: "Mat", details: "Perform 3 sets of 30 reps. Small alternating kicks, low to ground. Lower abs. (Rest 45 seconds per set)" },
+            { name: "Mason Twists (Quick Rep)", bodyPart: "Abs", equipment: "Mat", details: "Perform 3 sets of 30 reps (15 per side). Lean back, twist with weight. Oblique focus. (Rest 60 seconds per set)" },
+
+            // KETTLEBELL EXERCISES
+            { name: "Russian Twists (Quick Rep)", bodyPart: "Abs", equipment: "Kettlebell", details: "Perform 3 sets of 30 total reps (15 per side). Use the kettlebell for resistance. Keep feet off ground. (Rest 60 seconds per set)" },
+            { name: "Kettlebell Swings (Quick Rep)", bodyPart: "Full Body", equipment: "Kettlebell", details: "Perform 3 sets of 20 reps. Hip-hinge movement, not a squat. Drive through hips explosively. (Rest 60 seconds per set)" },
+            { name: "Kettlebell Goblet Squats (Quick Rep)", bodyPart: "Legs", equipment: "Kettlebell", details: "Perform 3 sets of 12 reps. Hold kettlebell at chest, squat deep. Keep chest up. (Rest 60 seconds per set)" },
+            { name: "Kettlebell Turkish Get-ups (Quick Rep)", bodyPart: "Full Body", equipment: "Kettlebell", details: "Perform 3 sets of 3 reps per side. Complex movement, start light. Focus on control. (Rest 90 seconds per set)" },
+            { name: "Kettlebell Clean and Press (Quick Rep)", bodyPart: "Full Body", equipment: "Kettlebell", details: "Perform 3 sets of 6 reps per side. Explosive hip drive, catch at shoulder, press overhead. (Rest 90 seconds per set)" },
+            { name: "Kettlebell Windmills (Quick Rep)", bodyPart: "Abs", equipment: "Kettlebell", details: "Perform 3 sets of 6 reps per side. Overhead hold, bend to opposite side. Great for mobility. (Rest 60 seconds per set)" },
+            { name: "Kettlebell Snatches (Quick Rep)", bodyPart: "Full Body", equipment: "Kettlebell", details: "Perform 3 sets of 10 reps per side. Explosive swing to overhead in one motion. Power development. (Rest 90 seconds per set)" },
+            { name: "Kettlebell Sumo Deadlifts (Quick Rep)", bodyPart: "Legs", equipment: "Kettlebell", details: "Perform 3 sets of 12 reps. Wide stance, two hands on one bell. Quad focus. (Rest 60 seconds per set)" },
+            { name: "Kettlebell Halos (Quick Rep)", bodyPart: "Upper Body", equipment: "Kettlebell", details: "Perform 3 sets of 10 reps per side. Rotate around head in circle. Shoulder mobility. (Rest 60 seconds per set)" },
+            { name: "Kettlebell Renegade Rows (Quick Rep)", bodyPart: "Back", equipment: "Kettlebell", details: "Perform 3 sets of 8 reps per side. Plank position with bells, row one at a time. Core and back. (Rest 60 seconds per set)" },
+            { name: "Kettlebell Bent Over Rows (Quick Rep)", bodyPart: "Back", equipment: "Kettlebell", details: "Perform 3 sets of 12 reps. Two bells, row to hips. Squeeze lats. (Rest 60 seconds per set)" },
+            { name: "Kettlebell Overhead Lunges (Quick Rep)", bodyPart: "Legs", equipment: "Kettlebell", details: "Perform 3 sets of 8 reps per leg. Overhead hold, lunge forward. Stability challenge. (Rest 90 seconds per set)" },
+            { name: "Kettlebell Single Leg Deadlifts (Quick Rep)", bodyPart: "Legs", equipment: "Kettlebell", details: "Perform 3 sets of 10 reps per side. Single bell, hinge on one leg. Balance and strength. (Rest 60 seconds per set)" },
+            { name: "Kettlebell Figure 8's (Quick Rep)", bodyPart: "Abs", equipment: "Kettlebell", details: "Perform 3 sets of 20 reps (10 per side). Circle bell around legs in figure-8. Core rotation. (Rest 60 seconds per set)" },
+            { name: "Kettlebell T-Rotations (Quick Rep)", bodyPart: "Abs", equipment: "Kettlebell", details: "Perform 3 sets of 10 reps per side. Plank with one bell, rotate to T-pose. Core stability. (Rest 60 seconds per set)" },
+            { name: "Kettlebell Tricep Extensions (Quick Rep)", bodyPart: "Arms", equipment: "Kettlebell", details: "Perform 3 sets of 12 reps. Overhead hold, lower behind head. Tricep isolation. (Rest 60 seconds per set)" },
+            { name: "Kettlebell Farmers Walk (Quick Rep)", bodyPart: "Full Body", equipment: "Kettlebell", details: "Perform 3 sets of 50 meters. One bell in each hand, walk. Grip and core. (Rest 90 seconds per set)" },
+            { name: "Kettlebell Overhead Squats (Quick Rep)", bodyPart: "Full Body", equipment: "Kettlebell", details: "Perform 3 sets of 10 reps. Hold one bell overhead, squat down. Mobility and strength. (Rest 90 seconds per set)" },
+
+            // PARALLEL BARS EXERCISES
+            { name: "Dips (Quick Rep)", bodyPart: "Upper Body", equipment: "Parallel Bars", details: "Perform 3 sets to failure. Keep chest up and lean slightly forward. Lower until shoulders below elbows. (Rest 90 seconds per set)" },
+            { name: "L-Sits (Quick Rep)", bodyPart: "Abs", equipment: "Parallel Bars", details: "Perform 3 sets of 15-30 seconds. Lift legs parallel to ground, keep arms straight. (Rest 60 seconds per set)" },
+            { name: "Weighted Dips (Quick Rep)", bodyPart: "Upper Body", equipment: "Parallel Bars", details: "Perform 3 sets of 10 reps. Add weight belt for progression. Controlled movement. (Rest 90 seconds per set)" },
+            { name: "Parallel Bar Support Hold (Quick Rep)", bodyPart: "Full Body", equipment: "Parallel Bars", details: "Perform 3 sets of 30 seconds. Hold yourself up, engage core. Builds strength and stability. (Rest 60 seconds per set)" },
+            { name: "Knee Raises on Bars (Quick Rep)", bodyPart: "Abs", equipment: "Parallel Bars", details: "Perform 3 sets of 15 reps. Lift knees to chest while supporting weight. Core focus. (Rest 60 seconds per set)" },
+            { name: "Archer Dips (Quick Rep)", bodyPart: "Upper Body", equipment: "Parallel Bars", details: "Perform 3 sets of 8 reps per side. Shift weight to one side. Advanced dip variation. (Rest 90 seconds per set)" },
+
+            // PULL-UP BAR EXERCISES
+            { name: "Pull-ups (Quick Rep)", bodyPart: "Back", equipment: "Bar", details: "Perform 3 sets to failure. Focus on pulling with your back, not just arms. Full range of motion. (Rest 90 seconds per set)" },
+            { name: "Chin-ups (Quick Rep)", bodyPart: "Arms", equipment: "Bar", details: "Perform 3 sets to failure. Underhand grip, targets biceps more. Pull chin over bar. (Rest 90 seconds per set)" },
+            { name: "Hanging Leg Raises (Quick Rep)", bodyPart: "Abs", equipment: "Bar", details: "Perform 3 sets of 10 reps. Hang from bar, raise legs to 90 degrees. Control the swing. (Rest 60 seconds per set)" },
+            { name: "Wide Grip Pull-ups (Quick Rep)", bodyPart: "Back", equipment: "Bar", details: "Perform 3 sets to failure. Hands wider than shoulders, emphasizes outer lats. Full ROM. (Rest 90 seconds per set)" },
+            { name: "Close Grip Chin-ups (Quick Rep)", bodyPart: "Arms", equipment: "Bar", details: "Perform 3 sets to failure. Hands close together, underhand grip. Bicep emphasis. (Rest 90 seconds per set)" },
+            { name: "Commando Pull-ups (Quick Rep)", bodyPart: "Full Body", equipment: "Bar", details: "Perform 3 sets of 10 reps. Alternate pulling head to each side. Advanced movement. (Rest 90 seconds per set)" },
+            { name: "Hanging Knee Raises (Quick Rep)", bodyPart: "Abs", equipment: "Bar", details: "Perform 3 sets of 15 reps. Bring knees to chest while hanging. Lower abs. (Rest 60 seconds per set)" },
+            { name: "Archer Pull-ups (Quick Rep)", bodyPart: "Back", equipment: "Bar", details: "Perform 3 sets of 6 reps per side. Pull to one side, shift weight. Unilateral strength. (Rest 90 seconds per set)" },
+            { name: "L-Sit Pull-ups (Quick Rep)", bodyPart: "Full Body", equipment: "Bar", details: "Perform 3 sets of 6 reps. Hold L-sit position while pulling up. Advanced core and back. (Rest 120 seconds per set)" },
+            { name: "Hanging Scissor Kicks (Quick Rep)", bodyPart: "Abs", equipment: "Bar", details: "Perform 3 sets of 20 reps. Alternating leg kicks while hanging. Lower abs focus. (Rest 60 seconds per set)" },
+
+            // BATTLE ROPES EXERCISES
+            { name: "Battle Ropes (Quick Rep)", bodyPart: "Arms", equipment: "Ropes", details: "Perform 3 sets of 45 seconds. High-intensity cardio and shoulder endurance. Alternate waves or spirals. (Rest 60 seconds per set)" },
+            { name: "Battle Rope Slams (Quick Rep)", bodyPart: "Full Body", equipment: "Ropes", details: "Perform 3 sets of 30 seconds. Lift ropes overhead and slam down explosively. (Rest 60 seconds per set)" },
+            { name: "Alternating Waves (Quick Rep)", bodyPart: "Arms", equipment: "Ropes", details: "Perform 3 sets of 45 seconds. Alternate arms creating wave pattern. Shoulder endurance. (Rest 60 seconds per set)" },
+            { name: "Double Waves (Quick Rep)", bodyPart: "Full Body", equipment: "Ropes", details: "Perform 3 sets of 30 seconds. Both arms simultaneously. Maximum intensity. (Rest 60 seconds per set)" },
+            { name: "Side-to-Side Slams (Quick Rep)", bodyPart: "Full Body", equipment: "Ropes", details: "Perform 3 sets of 30 reps. Rotate torso while slamming. Core rotation. (Rest 60 seconds per set)" },
+            { name: "Battle Rope Circles (Quick Rep)", bodyPart: "Arms", equipment: "Ropes", details: "Perform 3 sets of 20 reps per direction. Large circles with both arms. Shoulder mobility. (Rest 60 seconds per set)" },
+
+            // FARMER'S WALK
+            { name: "Farmer's Walk (Quick Rep)", bodyPart: "Full Body", equipment: "Dumbbells", details: "Perform 3 sets of 30-second walks. Grip strength and core stability. Keep shoulders back, walk with purpose. (Rest 90 seconds per set)" },
+            { name: "Single-Arm Farmers Walk (Quick Rep)", bodyPart: "Full Body", equipment: "Dumbbells", details: "Perform 3 sets of 20 meters per side. Unilateral carrying. Core anti-rotation. (Rest 90 seconds per set)" },
+            { name: "Overhead Carries (Quick Rep)", bodyPart: "Full Body", equipment: "Dumbbells", details: "Perform 3 sets of 30 meters. Press weights overhead, walk. Shoulder stability. (Rest 90 seconds per set)" },
+            { name: "Suitcase Carry (Quick Rep)", bodyPart: "Full Body", equipment: "Dumbbells", details: "Perform 3 sets of 30 meters per side. Heavy weight on one side. Core strength. (Rest 90 seconds per set)" },
+
+            // RESISTANCE BANDS
+            { name: "Band Pull-Aparts (Quick Rep)", bodyPart: "Upper Body", equipment: "Bands", details: "Perform 3 sets of 15 reps. Pull band apart at chest level, squeeze shoulder blades. (Rest 45 seconds per set)" },
+            { name: "Band Squats (Quick Rep)", bodyPart: "Legs", equipment: "Bands", details: "Perform 3 sets of 15 reps. Band around thighs or under feet, adds resistance to squats. (Rest 60 seconds per set)" },
+            { name: "Band Bicep Curls (Quick Rep)", bodyPart: "Arms", equipment: "Bands", details: "Perform 3 sets of 12 reps. Step on band, curl handles to shoulders. Constant tension. (Rest 60 seconds per set)" },
+            { name: "Band Tricep Extensions (Quick Rep)", bodyPart: "Arms", equipment: "Bands", details: "Perform 3 sets of 15 reps. Overhead band, extend arms. Tricep isolation. (Rest 60 seconds per set)" },
+            { name: "Band Chest Press (Quick Rep)", bodyPart: "Upper Body", equipment: "Bands", details: "Perform 3 sets of 12 reps. Band around back, press forward. Chest and triceps. (Rest 60 seconds per set)" },
+            { name: "Band Rows (Quick Rep)", bodyPart: "Back", equipment: "Bands", details: "Perform 3 sets of 15 reps. Anchor band, pull toward torso. Lat activation. (Rest 60 seconds per set)" },
+            { name: "Band Lateral Raises (Quick Rep)", bodyPart: "Upper Body", equipment: "Bands", details: "Perform 3 sets of 15 reps. Step on band, raise arms laterally. Shoulder focus. (Rest 60 seconds per set)" },
+            { name: "Band Deadlifts (Quick Rep)", bodyPart: "Legs", equipment: "Bands", details: "Perform 3 sets of 15 reps. Step on band, hip hinge movement. Posterior chain. (Rest 60 seconds per set)" },
+            { name: "Band Kickbacks (Quick Rep)", bodyPart: "Legs", equipment: "Bands", details: "Perform 3 sets of 20 reps per leg. Band around ankle, kick back. Glute focus. (Rest 60 seconds per set)" },
+            { name: "Band Monster Walks (Quick Rep)", bodyPart: "Legs", equipment: "Bands", details: "Perform 3 sets of 20 steps. Band around ankles, lateral steps. Hip abductors. (Rest 60 seconds per set)" },
+            { name: "Band Clamshells (Quick Rep)", bodyPart: "Legs", equipment: "Bands", details: "Perform 3 sets of 15 reps per side. Side-lying, lift top knee. Glute medius. (Rest 60 seconds per set)" },
+            { name: "Band Pull-Thrus (Quick Rep)", bodyPart: "Legs", equipment: "Bands", details: "Perform 3 sets of 15 reps. Pull band between legs, hip hinge. Posterior chain. (Rest 60 seconds per set)" }
+        ];
+        
+        const populateFilters = () => {
+            const bodyPartFilter = document.getElementById('body-part-filter');
+            const equipmentFilter = document.getElementById('equipment-filter');
+
+            bodyPartFilter.innerHTML = '<option value="All">Any Body Part</option>';
+            equipmentFilter.innerHTML = '<option value="All">Any Equipment</option>';
+
+            const uniqueBodyParts = [...new Set(physicalWorkouts.map(w => w.bodyPart))];
+            if (!uniqueBodyParts.includes('Full Body')) { uniqueBodyParts.unshift('Full Body'); }
+            if (!uniqueBodyParts.includes('Arms')) { uniqueBodyParts.push('Arms'); }
+            if (!uniqueBodyParts.includes('Abs')) { uniqueBodyParts.push('Abs'); } // Added Abs
+
+            uniqueBodyParts.forEach(part => {
+                if (part !== 'All') {
+                    bodyPartFilter.innerHTML += `<option value="${part}">${part}</option>`;
+                }
+            });
+
+            const uniqueEquipment = [...new Set(physicalWorkouts.map(w => w.equipment))];
+
+            uniqueEquipment.forEach(item => {
+                if (item !== 'Any') {
+                    equipmentFilter.innerHTML += `<option value="${item}">${item}</option>`;
+                }
+            });
+        };
+
+        const filterAndGenerateQuickWorkout = () => {
+            const bodyPart = document.getElementById('body-part-filter').value;
+            const equipment = document.getElementById('equipment-filter').value;
+
+            // Check if no equipment or body parts are selected
+            if (bodyPart === 'All' && equipment === 'All') {
+                equipmentEl.textContent = 'ERROR';
+                nameEl.textContent = 'No Equipment or Body Parts Selected';
+                const details = 'Please select specific equipment and/or body parts to generate a workout.';
+                detailsEl.textContent = details;
+                setMotivationQuote("Select your preferences first!", details);
+                currentWorkout = null;
+                return;
+            }
+
+            const filteredWorkouts = physicalWorkouts.filter(workout => {
+                const matchesBody = bodyPart === 'All' || workout.bodyPart === bodyPart;
+                const matchesEquipment = equipment === 'All' || workout.equipment === equipment;
+                return matchesBody && matchesEquipment;
+            });
+
+            resetTimer(); 
+            
+            if (filteredWorkouts.length === 0) {
+                equipmentEl.textContent = 'ERROR';
+                nameEl.textContent = 'No Quick Rep Found';
+                const details = 'Try selecting different filters. Your current filter combination yields no quick results.';
+                detailsEl.textContent = details;
+                setMotivationQuote("Need more gear? Try the AI Trainer!", details);
+                currentWorkout = null;
+                return;
+            }
+
+            const randomIndex = Math.floor(Math.random() * filteredWorkouts.length);
+            const workout = filteredWorkouts[randomIndex];
+            currentWorkout = workout; // Store the current workout
+            
+            // Check if weight selector should be shown and if weight is selected
+            if ((workout.equipment === 'Dumbbells' || workout.equipment === 'Barbell') && !selectedWeight) {
+                equipmentEl.textContent = `EQUIPMENT: ${workout.equipment.toUpperCase()}`;
+                nameEl.textContent = workout.name;
+                detailsEl.textContent = '⚠️ Please select a weight before starting!';
+                showWeightSelector(workout.equipment);
+                setMotivationQuote("Select your weight first!", 'Choose the appropriate weight for your exercise.');
+                return;
+            }
+            
+            updateWODDisplay(workout.name, workout.equipment, workout.details);
+        };
+
+        // --- LLM API Logic (simulated) ---
+        const setUIState = (isLoading, error = null) => {
+            quickBtn.disabled = isLoading;
+            aiBtn.disabled = isLoading;
+            startWorkoutSetBtn.disabled = !isLoading; 
+            stopWorkoutSetBtn.disabled = true; 
+            
+            messageEl.style.display = isLoading || error ? 'block' : 'none';
+            messageEl.className = 'text-center text-sm mt-4 h-5';
+
+            if (isLoading) {
+                messageEl.textContent = 'Generating custom plan...';
+                messageEl.classList.add('text-accent-red', 'animate-loading');
+                nameEl.textContent = 'TRAINER ONLINE...';
+                detailsEl.textContent = 'Synthesizing data based on your requirements. Stand by.';
+                equipmentEl.textContent = 'EQUIPMENT: LOADING...';
+                setMotivationQuote("Processing... Wait for the compiler to finish.", 'Synthesizing data based on your requirements. Stand by.');
+            } else if (error) {
+                messageEl.textContent = `Error: ${error}`;
+                messageEl.classList.add('text-danger', 'font-bold');
+                nameEl.textContent = 'GENERATION FAILED';
+                detailsEl.textContent = 'Could not contact the AI Trainer. Please check your connection or try again.';
+                equipmentEl.textContent = 'ERROR';
+                setMotivationQuote("API Failed. Must be a network timeout error.", 'Could not contact the AI Trainer. Please check your connection or try again.');
+            } else {
+                messageEl.textContent = '';
+            }
+        };
+
+        const generateAITrainerPlan = async () => {
+            const bodyPart = document.getElementById('body-part-filter').value;
+            const equipment = document.getElementById('equipment-filter').value;
+
+            // Check if no equipment or body parts are selected
+            if (bodyPart === 'All' && equipment === 'All') {
+                equipmentEl.textContent = 'ERROR';
+                nameEl.textContent = 'No Equipment or Body Parts Selected';
+                const details = 'Please select specific equipment and/or body parts to generate an AI workout plan.';
+                detailsEl.textContent = details;
+                setMotivationQuote("Select your preferences first!", details);
+                currentWorkout = null;
+                return;
+            }
+
+            resetTimer();
+            setUIState(true);
+
+            // Simulate API delay
+            setTimeout(() => {
+                // Mock AI response
+                const mockResponses = [
+                    {
+                        title: "Upper Body Power Circuit",
+                        equipment: "Dumbbells",
+                        details: "1. Dumbbell Bench Press: 4 sets of 8-10 reps. Focus on controlled movements.\n2. Dumbbell Rows: 3 sets of 10-12 reps per side. Keep your back straight.\n3. Dumbbell Shoulder Press: 3 sets of 10 reps. Press overhead with control."
+                    },
+                    {
+                        title: "Leg Day Dominance",
+                        equipment: "Barbell",
+                        details: "1. Barbell Squats: 4 sets of 8 reps. Go deep but maintain form.\n2. Barbell Lunges: 3 sets of 10 reps per leg. Keep your chest up.\n3. Barbell Deadlifts: 3 sets of 8 reps. Focus on proper hip hinge."
+                    },
+                    {
+                        title: "Core Crusher",
+                        equipment: "Mat",
+                        details: "1. Plank: 3 sets of 60 seconds. Keep your body in a straight line.\n2. Leg Raises: 3 sets of 15 reps. Control the movement.\n3. Russian Twists: 3 sets of 20 reps (10 per side). Engage your obliques."
+                    }
+                ];
+                
+                const randomResponse = mockResponses[Math.floor(Math.random() * mockResponses.length)];
+                
+                updateWODDisplay(randomResponse.title, randomResponse.equipment, randomResponse.details);
+                setUIState(false);
+            }, 2000);
+        };
+
+        // --- Main Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // Initialize Firebase Authentication
+            initAuth();
+            
+            // --- Social Login Event Listeners ---
+            googleLoginBtn.addEventListener('click', signInWithGoogle);
+            githubLoginBtn.addEventListener('click', signInWithGitHub);
+
+            // --- Modal Event Listeners ---
+            headerAuthBtn.addEventListener('click', openAuthModal);
+            footerAuthBtn.addEventListener('click', openAuthModal);
+            closeModalBtn.addEventListener('click', closeAuthModal);
+            authModal.addEventListener('click', (e) => {
+                if (e.target === authModal) {
+                    closeAuthModal();
+                }
+            });
+
+            // --- History Modal Listeners ---
+            viewHistoryBtn.addEventListener('click', openHistoryModal);
+            closeHistoryBtn.addEventListener('click', closeHistoryModal);
+            historyModal.addEventListener('click', (e) => {
+                if (e.target === historyModal) {
+                    closeHistoryModal();
+                }
+            });
+
+            // --- Countdown Duration Listener ---
+            countdownDurationEl.addEventListener('change', updateCountdown);
+
+            // --- Nutrition Listeners ---
+            calculateCaloriesBtn.addEventListener('click', calculateCalories);
+            generateDietBtn.addEventListener('click', generateDietPlan);
+
+            // Email/Password form submission
+            const loginForm = document.getElementById('login-form');
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                
+                if (!email || !password) {
+                    alert('Please enter both email and password');
+                    return;
+                }
+                
+                // Try to sign in first, if fails then create account
+                signInWithEmail(email, password)
+                    .catch((error) => {
+                        // If sign in fails, try to create account
+                        if (error.code === 'auth/user-not-found') {
+                            signUpWithEmail(email, password);
+                        } else {
+                            alert('Authentication error: ' + error.message);
+                        }
+                    });
+            });
+
+            // Initialize Competition Countdown Timer
+            updateCountdown();
+
+            // Initialize UI and WOD section
+            updateUserUI();
+            populateFilters();
+            
+            // Event Listeners for WOD and Timer Controls
+            quickBtn.addEventListener('click', filterAndGenerateQuickWorkout);
+            aiBtn.addEventListener('click', generateAITrainerPlan);
+            
+            // Clear weight selection when equipment filter changes
+            const equipmentFilter = document.getElementById('equipment-filter');
+            equipmentFilter.addEventListener('change', () => {
+                selectedWeight = null;
+            });
+
+            // TIMER LISTENERS
+            durationSelectEl.addEventListener('change', updateSetDuration);
+            startWorkoutSetBtn.addEventListener('click', startTimer);
+            stopWorkoutSetBtn.addEventListener('click', () => stopTimer(true)); // Pass true for pause
+            resetWorkoutSetBtn.addEventListener('click', resetTimer); 
+            
+            // Set initial state
+            updateSetDuration(); 
+            filterAndGenerateQuickWorkout(); 
+        });
+    </script>
+</body>
+</html>
